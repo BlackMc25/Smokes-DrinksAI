@@ -1,0 +1,7 @@
+{
+  "name": "Smoke&DrinkRisk.AI",
+  "description": "An AI-powered health companion for monitoring and predicting smoking and drinking behaviors, featuring voice interaction and smart chat.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

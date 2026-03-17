@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user-specific settings and profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique identifier for the user." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "photoURL": { "type": "string", "description": "URL to the user's profile photo." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the profile was created." }
+      },
+      "required": ["uid", "email"]
+    },
+    "HealthAssessment": {
+      "title": "Health Assessment",
+      "description": "Stores a single health assessment result for a user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the user who owns this assessment." },
+        "metrics": {
+          "type": "object",
+          "description": "The raw health metrics used for the prediction."
+        },
+        "smokingProb": { "type": "number", "description": "Predicted probability of smoking." },
+        "drinkingProb": { "type": "number", "description": "Predicted probability of drinking." },
+        "insights": { "type": "string", "description": "AI-generated health insights." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the assessment was performed." }
+      },
+      "required": ["uid", "metrics", "smokingProb", "drinkingProb", "createdAt"]
+    },
+    "Complaint": {
+      "title": "User Complaint",
+      "description": "Stores user complaints or feedback.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the user." },
+        "email": { "type": "string", "format": "email", "description": "The email of the user." },
+        "subject": { "type": "string", "description": "The subject of the complaint." },
+        "message": { "type": "string", "description": "The detailed complaint message." },
+        "uid": { "type": "string", "description": "The ID of the user (if authenticated)." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the complaint was submitted." }
+      },
+      "required": ["name", "email", "message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles."
+    },
+    "/assessments/{assessmentId}": {
+      "schema": "HealthAssessment",
+      "description": "Collection of health assessments."
+    },
+    "/complaints/{complaintId}": {
+      "schema": "Complaint",
+      "description": "Collection of user complaints."
+    }
+  }
+}
