@@ -232,14 +232,180 @@ const SelectField = ({ label, value, onChange, options, id, placeholder = "Selec
 
 // --- Main App ---
 
-export default function HealthRiskApp() {
-  const [activeTab, setActiveTab] = useState('home');
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-  const [showAuthModal, setShowAuthModal] = useState(false);
+// --- Auth Modal ---
+const AuthModal = ({ 
+  showAuthModal, 
+  setShowAuthModal,
+  authMode,
+  setAuthMode,
+  handleLogin
+}: { 
+  showAuthModal: boolean; 
+  setShowAuthModal: (show: boolean) => void;
+  authMode: 'signin' | 'signup';
+  setAuthMode: (mode: 'signin' | 'signup') => void;
+  handleLogin: () => Promise<void>;
+}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setLoading(true);
+    try {
+      if (authMode === 'signup') {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        if (displayName) {
+          await updateProfile(userCredential.user, { displayName });
+        }
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+      setShowAuthModal(false);
+    } catch (error: any) {
+      console.error("Auth failed:", error);
+      setAuthError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setAuthError(null);
+    setLoading(true);
+    try {
+      await handleLogin();
+    } catch (error: any) {
+      setAuthError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAuthModal(false)}
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="relative w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+          >
+            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">{authMode === 'signin' ? 'Sign In' : 'Sign Up'}</h3>
+              <button onClick={() => setShowAuthModal(false)} className="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="text-center space-y-2">
+                <p className="text-slate-400 text-sm">
+                  {authMode === 'signin' 
+                    ? 'Sign in to access your health dashboard.' 
+                    : 'Join us today for personalized AI-powered health insights.'}
+                </p>
+              </div>
+
+              <form onSubmit={handleEmailAuth} className="space-y-4">
+                {authMode === 'signup' && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Name</label>
+                    <input
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Your Name"
+                      className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                      required
+                    />
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="email@example.com"
+                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                    required
+                  />
+                </div>
+
+                {authError && (
+                  <p className="text-red-500 text-xs text-center">{authError}</p>
+                )}
+
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Processing...' : (authMode === 'signin' ? 'Sign In' : 'Sign Up')}
+                </button>
+
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
+                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-900 px-2 text-slate-500">Or</span></div>
+                </div>
+
+                <button 
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="w-full py-3 bg-white/5 text-white border border-white/10 rounded-xl font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Image src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width={18} height={18} alt="Google" />
+                  {loading ? 'Connecting...' : 'Continue with Google'}
+                </button>
+
+                <p className="text-center text-sm text-slate-500">
+                  {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}{' '}
+                  <button 
+                    type="button"
+                    onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
+                    className="text-blue-500 hover:underline font-medium"
+                  >
+                    {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
+                  </button>
+                </p>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default function HealthRiskApp() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
   const [predictionLoading, setPredictionLoading] = useState(false);
@@ -492,31 +658,10 @@ export default function HealthRiskApp() {
   };
   const handleLogin = async () => {
     try {
-      setAuthError(null);
       await signInWithPopup(auth, googleProvider);
       setShowAuthModal(false);
     } catch (error: any) {
       console.error("Login failed:", error);
-      setAuthError(error.message);
-    }
-  };
-
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError(null);
-    try {
-      if (authMode === 'signup') {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        if (displayName) {
-          await updateProfile(userCredential.user, { displayName });
-        }
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-      setShowAuthModal(false);
-    } catch (error: any) {
-      console.error("Auth failed:", error);
-      setAuthError(error.message);
     }
   };
 
@@ -529,122 +674,6 @@ export default function HealthRiskApp() {
     } catch (error) {
       console.error("Logout failed:", error);
     }
-  };
-
-  // --- Auth Modal ---
-  const AuthModal = () => {
-    return (
-      <AnimatePresence>
-        {showAuthModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAuthModal(false)}
-              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
-            >
-              <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-white">{authMode === 'signin' ? 'Sign In' : 'Sign Up'}</h3>
-                <button onClick={() => setShowAuthModal(false)} className="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors">
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="p-6 space-y-6">
-                <div className="text-center space-y-2">
-                  <p className="text-slate-400 text-sm">
-                    {authMode === 'signin' 
-                      ? 'Sign in to access your health dashboard.' 
-                      : 'Join us today for personalized AI-powered health insights.'}
-                  </p>
-                </div>
-
-                <form onSubmit={handleEmailAuth} className="space-y-4">
-                  {authMode === 'signup' && (
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Name</label>
-                      <input
-                        type="text"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        placeholder="Your Name"
-                        className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                        required
-                      />
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Email</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="email@example.com"
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Password</label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                      required
-                    />
-                  </div>
-
-                  {authError && (
-                    <p className="text-red-500 text-xs text-center">{authError}</p>
-                  )}
-
-                  <button 
-                    type="submit"
-                    className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
-                  >
-                    {authMode === 'signin' ? 'Sign In' : 'Sign Up'}
-                  </button>
-
-                  <div className="relative py-2">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-900 px-2 text-slate-500">Or</span></div>
-                  </div>
-
-                  <button 
-                    type="button"
-                    onClick={handleLogin}
-                    className="w-full py-3 bg-white/5 text-white border border-white/10 rounded-xl font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Image src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width={18} height={18} alt="Google" />
-                    Continue with Google
-                  </button>
-
-                  <p className="text-center text-sm text-slate-500">
-                    {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}{' '}
-                    <button 
-                      type="button"
-                      onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
-                      className="text-blue-500 hover:underline font-medium"
-                    >
-                      {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
-                    </button>
-                  </p>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    );
   };
 
   // --- Settings Modal ---
@@ -2513,7 +2542,13 @@ export default function HealthRiskApp() {
       </main>
 
       <SettingsModal />
-      <AuthModal />
+      <AuthModal 
+        showAuthModal={showAuthModal} 
+        setShowAuthModal={setShowAuthModal}
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        handleLogin={handleLogin}
+      />
       <VoiceMode />
 
       <style jsx global>{`
