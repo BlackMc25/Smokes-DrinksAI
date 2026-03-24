@@ -11,7 +11,7 @@ export class LiveVoiceService {
   private nextStartTime: number = 0;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+    this.ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || "" });
   }
 
   async start(callbacks: {
@@ -25,7 +25,7 @@ export class LiveVoiceService {
       this.nextStartTime = this.audioContext.currentTime;
 
       this.session = await this.ai.live.connect({
-        model: "gemini-2.5-flash-native-audio-preview-09-2025",
+        model: "gemini-2.5-flash-native-audio-preview-12-2025",
         callbacks: {
           onopen: () => {
             this.startMic();
@@ -93,7 +93,7 @@ export class LiveVoiceService {
         
         if (this.session) {
           this.session.sendRealtimeInput({
-            media: { data: base64Data, mimeType: 'audio/pcm;rate=16000' }
+            audio: { data: base64Data, mimeType: 'audio/pcm;rate=16000' }
           });
         }
       };

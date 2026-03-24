@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smoke&DrinkRisk.AI - Smart Health Companion</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Framer Motion -->
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #e2e8f0;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .animate-glow {
+            animation: glow 4s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { opacity: 0.3; transform: scale(1); }
+            to { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            margin-right: 2px;
+            animation: typing 1s infinite ease-in-out;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Load Gemini SDK via ESM -->
+    <script type="module">
+        import { GoogleGenAI } from "https://esm.run/@google/genai";
+        window.GoogleGenAI = GoogleGenAI;
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+        const { motion, AnimatePresence } = window.Motion || { motion: { div: ({children, ...props}) => <div {...props}>{children}</div> }, AnimatePresence: ({children}) => <>{children}</> };
+
+        // --- XGBoost Predictor Logic ---
+        class XGBPredictor {
+            constructor(modelJson) {
+                this.model = modelJson;
+                this.trees = this.model.learner.gradient_booster.model.trees;
+                this.featureNames = this.model.learner.feature_names;
+                this.baseScore = parseFloat(this.model.learner.learner_model_param?.base_score || 0.5);
+            }
+
+            predict(features) {
+                let sum = 0;
+                const featureArray = this.featureNames.map(name => features[name] ?? 0);
+                for (const tree of this.trees) {
+                    sum += this.predictTree(tree, featureArray);
+                }
+                const logitBase = Math.log(this.baseScore / (1 - this.baseScore));
+                return 1 / (1 + Math.exp(-(logitBase + sum)));
+            }
+
+            predictTree(tree, features) {
+                let nodeIdx = 0;
+                while (true) {
+                    const leftChild = tree.left_children[nodeIdx];
+                    if (leftChild === -1) return tree.base_weights[nodeIdx];
+                    const featureIdx = tree.split_indices[nodeIdx];
+                    const condition = tree.split_conditions[nodeIdx];
+                    nodeIdx = features[featureIdx] < condition ? leftChild : tree.right_children[nodeIdx];
+                }
+            }
+        }
+
+        // --- Components ---
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        };
+
+        const GlassCard = ({ children, className = "" }) => (
+            <div className={`glass-card overflow-hidden ${className}`}>
+                {children}
+            </div>
+        );
+
+        // --- App ---
+        function App() {
+            const [activeTab, setActiveTab] = useState('home');
+            const [modelsLoaded, setModelsLoaded] = useState(false);
+            const [predictionLoading, setPredictionLoading] = useState(false);
+            const [predictionResult, setPredictionResult] = useState(null);
+            
+            const smokingPredictor = useRef(null);
+            const drinkingPredictor = useRef(null);
+
+            const [metrics, setMetrics] = useState({
+                BMI: 24.5, SBP: 120, DBP: 80, BLDS: 95, gamma_GTP: 35, 
+                triglyceride: 150, DRK_YN: 0, SMK_stat_type_cd: 1, 
+                hemoglobin: 14.5, waistline: 85, HDL_chole: 50, 
+                LDL_chole: 110, sex_numeric: 1, urine_protein: 1
+            });
+
+            // --- Chat State ---
+            const [messages, setMessages] = useState([
+                { role: 'assistant', content: "Hello! I'm Elena, your AI health companion. I can help you understand your health risks or answer questions about smoking and drinking. Have you run an analysis yet?" }
+            ]);
+            const [inputValue, setInputValue] = useState("");
+            const [isTyping, setIsTyping] = useState(false);
+            const [isListening, setIsListening] = useState(false);
+            const [isSpeaking, setIsSpeaking] = useState(false);
+            const chatEndRef = useRef(null);
+            const recognition = useRef(null);
+
+            useEffect(() => {
+                loadModels();
+                setupSpeechRecognition();
+                if (window.lucide) window.lucide.createIcons();
+            }, []);
+
+            useEffect(() => {
+                chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, [messages, isTyping]);
+
+            const setupSpeechRecognition = () => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (SpeechRecognition) {
+                    recognition.current = new SpeechRecognition();
+                    recognition.current.continuous = false;
+                    recognition.current.interimResults = false;
+                    recognition.current.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        setInputValue(transcript);
+                        handleSendMessage(transcript);
+                    };
+                    recognition.current.onend = () => setIsListening(false);
+                }
+            };
+
+            const toggleListening = () => {
+                if (isListening) {
+                    recognition.current?.stop();
+                } else {
+                    setIsListening(true);
+                    recognition.current?.start();
+                }
+            };
+
+            const speak = (text) => {
+                if (!window.speechSynthesis) return;
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.onstart = () => setIsSpeaking(true);
+                utterance.onend = () => setIsSpeaking(false);
+                window.speechSynthesis.speak(utterance);
+            };
+
+            const loadModels = async () => {
+                try {
+                    const [smokingRes, drinkingRes] = await Promise.all([
+                        fetch('/models/Retrain_smoking_model_xgb.json'),
+                        fetch('/models/Retrain_Drinking_model_xgb.json')
+                    ]);
+                    smokingPredictor.current = new XGBPredictor(await smokingRes.json());
+                    drinkingPredictor.current = new XGBPredictor(await drinkingRes.json());
+                    setModelsLoaded(true);
+                } catch (e) { console.error("Model load error", e); }
+            };
+
+            const handlePredict = async () => {
+                setPredictionLoading(true);
+                await new Promise(r => setTimeout(r, 1500));
+                const s = smokingPredictor.current?.predict(metrics) || 0;
+                const d = drinkingPredictor.current?.predict(metrics) || 0;
+                setPredictionResult({ smoking: s, drinking: d, timestamp: new Date() });
+                setPredictionLoading(false);
+                setActiveTab('results');
+                
+                // Elena comments on results
+                const comment = `I've analyzed your data. Your smoking risk is ${(s*100).toFixed(1)}% and drinking risk is ${(d*100).toFixed(1)}%. Let's talk about what this means in the chat!`;
+                setMessages(prev => [...prev, { role: 'assistant', content: comment }]);
+            };
+
+            const handleSendMessage = async (textOverride) => {
+                const text = textOverride || inputValue;
+                if (!text.trim()) return;
+
+                const userMsg = { role: 'user', content: text };
+                setMessages(prev => [...prev, userMsg]);
+                setInputValue("");
+                setIsTyping(true);
+
+                try {
+                    if (!window.GoogleGenAI) throw new Error("Gemini SDK not loaded");
+                    
+                    const ai = new window.GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
+                    const model = ai.models.generateContent({
+                        model: "gemini-3-flash-preview",
+                        contents: [
+                            {
+                                role: "user",
+                                parts: [{ text: `
+                                    You are Elena, a professional and empathetic AI health companion. 
+                                    Your goal is to help users understand their health risks related to smoking and drinking.
+                                    
+                                    Current User Metrics: ${JSON.stringify(metrics)}
+                                    Latest Prediction Results: ${predictionResult ? JSON.stringify(predictionResult) : "Not yet analyzed"}
+                                    
+                                    User Message: ${text}
+                                    
+                                    Guidelines:
+                                    1. Be supportive but medically responsible.
+                                    2. If risks are high, suggest consulting a doctor.
+                                    3. Reference the user's specific metrics if relevant.
+                                    4. Keep responses concise and conversational.
+                                `}]
+                            }
+                        ]
+                    });
+
+                    const response = await model;
+                    const aiText = response.text;
+                    
+                    setMessages(prev => [...prev, { role: 'assistant', content: aiText }]);
+                    if (isListening || isSpeaking) speak(aiText);
+                } catch (error) {
+                    console.error("Chat error:", error);
+                    setMessages(prev => [...prev, { role: 'assistant', content: "I'm having a bit of trouble connecting right now. Please try again in a moment!" }]);
+                } finally {
+                    setIsTyping(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen pb-32">
+                    {/* Background */}
+                    <div className="fixed inset-0 pointer-events-none z-0">
+                        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[100px] rounded-full animate-glow"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[100px] rounded-full animate-glow" style={{ animationDelay: '2s' }}></div>
+                    </div>
+
+                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+                        <GlassCard className="flex p-1.5 gap-1 shadow-2xl">
+                            {[
+                                { id: 'home', icon: 'home', label: 'Home' },
+                                { id: 'predict', icon: 'brain', label: 'Predict' },
+                                { id: 'chat', icon: 'message-square', label: 'Elena' }
+                            ].map(item => (
+                                <button 
+                                    key={item.id}
+                                    onClick={() => setActiveTab(item.id)}
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all ${activeTab === item.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    <Icon name={item.icon} size={18} />
+                                    {activeTab === item.id && <span className="text-sm font-medium">{item.label}</span>}
+                                </button>
+                            ))}
+                        </GlassCard>
+                    </nav>
+
+                    <main className="relative z-10 max-w-4xl mx-auto px-6 pt-16">
+                        {activeTab === 'home' && (
+                            <div className="space-y-12">
+                                <header>
+                                    <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">Health<span className="text-blue-500">AI</span> Analysis</h1>
+                                    <p className="text-slate-400 text-xl max-w-2xl">Advanced risk prediction for smoking and drinking behaviors powered by XGBoost machine learning.</p>
+                                </header>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <GlassCard className="p-8 group cursor-pointer hover:border-blue-500/50 transition-all" onClick={() => setActiveTab('predict')}>
+                                        <div className="w-14 h-14 bg-blue-600/20 rounded-2xl flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 transition-transform">
+                                            <Icon name="brain" size={28} />
+                                        </div>
+                                        <h3 className="text-2xl font-bold text-white mb-2">Start Prediction</h3>
+                                        <p className="text-slate-400 mb-6">Input your clinical metrics to get a detailed risk assessment.</p>
+                                        <div className="flex items-center text-blue-500 font-bold gap-2">Get Started <Icon name="arrow-right" size={16} /></div>
+                                    </GlassCard>
+
+                                    <GlassCard className="p-8 group cursor-pointer hover:border-purple-500/50 transition-all" onClick={() => setActiveTab('chat')}>
+                                        <div className="w-14 h-14 bg-purple-600/20 rounded-2xl flex items-center justify-center text-purple-500 mb-6 group-hover:scale-110 transition-transform">
+                                            <Icon name="message-square" size={28} />
+                                        </div>
+                                        <h3 className="text-2xl font-bold text-white mb-2">Talk to Elena</h3>
+                                        <p className="text-slate-400 mb-6">Discuss your results and get personalized health advice from our AI.</p>
+                                        <div className="flex items-center text-purple-500 font-bold gap-2">Open Chat <Icon name="arrow-right" size={16} /></div>
+                                    </GlassCard>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'predict' && (
+                            <div className="space-y-8">
+                                <div className="flex justify-between items-end">
+                                    <h2 className="text-3xl font-bold text-white">Risk Assessment</h2>
+                                    <div className={`text-xs font-bold uppercase px-3 py-1 rounded-full ${modelsLoaded ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                                        {modelsLoaded ? 'Models Loaded' : 'Loading Models...'}
+                                    </div>
+                                </div>
+
+                                <GlassCard className="p-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                        <div className="space-y-4">
+                                            <p className="text-blue-500 font-bold text-xs uppercase tracking-widest">General</p>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1 uppercase">Sex</label>
+                                                <select value={metrics.sex_numeric} onChange={e => setMetrics({...metrics, sex_numeric: parseInt(e.target.value)})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                                                    <option value={1}>Male</option>
+                                                    <option value={2}>Female</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1 uppercase">BMI</label>
+                                                <input type="number" value={metrics.BMI} onChange={e => setMetrics({...metrics, BMI: parseFloat(e.target.value)})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1 uppercase">Waistline (cm)</label>
+                                                <input type="number" value={metrics.waistline} onChange={e => setMetrics({...metrics, waistline: parseFloat(e.target.value)})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <p className="text-purple-500 font-bold text-xs uppercase tracking-widest">Blood Pressure & Sugar</p>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1 uppercase">Systolic BP</label>
+                                                <input type="number" value={metrics.SBP} onChange={e => setMetrics({...metrics, SBP: parseFloat(e.target.value)})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1 uppercase">Diastolic BP</label>
+                                                <input type="number" value={metrics.DBP} onChange={e => setMetrics({...metrics, DBP: parseFloat(e.target.value)})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1 uppercase">Fasting Sugar</label>
+                                                <input type="number" value={metrics.BLDS} onChange={e => setMetrics({...metrics, BLDS: parseFloat(e.target.value)})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <p className="text-emerald-500 font-bold text-xs uppercase tracking-widest">Lipids & Liver</p>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1 uppercase">Triglyceride</label>
+                                                <input type="number" value={metrics.triglyceride} onChange={e => setMetrics({...metrics, triglyceride: parseFloat(e.target.value)})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1 uppercase">Gamma GTP</label>
+                                                <input type="number" value={metrics.gamma_GTP} onChange={e => setMetrics({...metrics, gamma_GTP: parseFloat(e.target.value)})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-slate-500 mb-1 uppercase">Hemoglobin</label>
+                                                <input type="number" value={metrics.hemoglobin} onChange={e => setMetrics({...metrics, hemoglobin: parseFloat(e.target.value)})} className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-10 pt-8 border-t border-white/10 flex justify-center">
+                                        <button 
+                                            onClick={handlePredict}
+                                            disabled={!modelsLoaded || predictionLoading}
+                                            className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-12 py-4 rounded-2xl shadow-xl shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                                        >
+                                            {predictionLoading ? "Analyzing Data..." : "Run Analysis"}
+                                            {!predictionLoading && <Icon name="arrow-right" size={20} />}
+                                        </button>
+                                    </div>
+                                </GlassCard>
+                            </div>
+                        )}
+
+                        {activeTab === 'results' && predictionResult && (
+                            <div className="space-y-8">
+                                <div className="text-center">
+                                    <h2 className="text-4xl font-bold text-white mb-2">Analysis Results</h2>
+                                    <p className="text-slate-400">Based on your clinical data as of {predictionResult.timestamp.toLocaleTimeString()}</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <GlassCard className="p-8">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div>
+                                                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Smoking Risk</p>
+                                                <div className="text-5xl font-bold text-white">{(predictionResult.smoking * 100).toFixed(1)}%</div>
+                                            </div>
+                                            <div className="p-3 bg-blue-600/20 rounded-xl text-blue-500"><Icon name="wind" size={24} /></div>
+                                        </div>
+                                        <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden mb-4">
+                                            <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${predictionResult.smoking * 100}%` }}></div>
+                                        </div>
+                                        <p className="text-sm text-slate-400">Your metrics suggest a {predictionResult.smoking > 0.5 ? 'high' : 'low'} probability of smoking-related health risks.</p>
+                                    </GlassCard>
+
+                                    <GlassCard className="p-8">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div>
+                                                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Drinking Risk</p>
+                                                <div className="text-5xl font-bold text-white">{(predictionResult.drinking * 100).toFixed(1)}%</div>
+                                            </div>
+                                            <div className="p-3 bg-purple-600/20 rounded-xl text-purple-500"><Icon name="beer" size={24} /></div>
+                                        </div>
+                                        <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden mb-4">
+                                            <div className="h-full bg-purple-500 transition-all duration-1000" style={{ width: `${predictionResult.drinking * 100}%` }}></div>
+                                        </div>
+                                        <p className="text-sm text-slate-400">Alcohol-related risk factors are currently {predictionResult.drinking > 0.5 ? 'elevated' : 'within normal range'}.</p>
+                                    </GlassCard>
+                                </div>
+                                
+                                <div className="flex justify-center gap-4">
+                                    <button onClick={() => setActiveTab('predict')} className="px-8 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors">Adjust Data</button>
+                                    <button onClick={() => setActiveTab('chat')} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors">Talk to Elena</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'chat' && (
+                            <GlassCard className="h-[600px] flex flex-col shadow-2xl">
+                                <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-600/20">E</div>
+                                        <div>
+                                            <h3 className="text-white font-bold text-sm">Elena</h3>
+                                            <p className="text-slate-500 text-xs flex items-center gap-1">
+                                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                                                AI Health Companion
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => window.speechSynthesis.cancel()} 
+                                            className="p-2 text-slate-400 hover:text-white transition-colors"
+                                            title="Stop Speaking"
+                                        >
+                                            <Icon name="volume-x" size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                                    {messages.map((msg, i) => (
+                                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed ${
+                                                msg.role === 'user' 
+                                                ? 'bg-blue-600 text-white rounded-tr-none shadow-lg shadow-blue-600/10' 
+                                                : 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-white/5'
+                                            }`}>
+                                                {msg.content}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {isTyping && (
+                                        <div className="flex justify-start">
+                                            <div className="bg-slate-800/80 p-4 rounded-2xl rounded-tl-none border border-white/5 flex items-center gap-2">
+                                                <div className="typing-indicator">
+                                                    <span></span><span></span><span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div ref={chatEndRef} />
+                                </div>
+
+                                <div className="p-4 border-t border-white/10 bg-slate-900/50">
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={toggleListening}
+                                            className={`p-3 rounded-xl transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                                        >
+                                            <Icon name={isListening ? "mic-off" : "mic"} size={20} />
+                                        </button>
+                                        <input 
+                                            type="text" 
+                                            value={inputValue}
+                                            onChange={e => setInputValue(e.target.value)}
+                                            onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
+                                            placeholder="Ask Elena anything..." 
+                                            className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all" 
+                                        />
+                                        <button 
+                                            onClick={() => handleSendMessage()}
+                                            disabled={!inputValue.trim() || isTyping}
+                                            className="bg-blue-600 p-3 rounded-xl text-white hover:bg-blue-500 disabled:opacity-50 transition-all shadow-lg shadow-blue-600/20"
+                                        >
+                                            <Icon name="send" size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </GlassCard>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

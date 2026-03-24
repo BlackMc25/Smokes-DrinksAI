@@ -35,6 +35,14 @@ service cloud.firestore {
     //   - uid: string (optional)
     //   - createdAt: timestamp (required)
     //
+    // Collection: chats
+    // Document ID: {chatId}
+    // Fields:
+    //   - uid: string (required)
+    //   - role: string (required, 'user' or 'model')
+    //   - content: string (required)
+    //   - createdAt: timestamp (required)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -108,6 +116,13 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    function isValidChatMessage(data) {
+      return data.uid is string && data.uid == request.auth.uid &&
+             data.role in ['user', 'model'] &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 10000 &&
+             data.createdAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -130,6 +145,12 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isValidComplaint(request.resource.data);
       allow update, delete: if isAdmin();
+    }
+
+    match /chats/{chatId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidChatMessage(request.resource.data);
+      allow update, delete: if isDocOwner() || isAdmin();
     }
 
     match /test/connection {

@@ -19,7 +19,7 @@ export interface HealthMetrics {
 }
 
 export async function getHealthInsights(metrics: HealthMetrics, smokingProb: number, drinkingProb: number) {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+  const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY! });
   
   const prompt = `
     Based on the following health metrics and AI-predicted probabilities, provide a concise health assessment and actionable advice. You are Elena, a professional health assistant.
