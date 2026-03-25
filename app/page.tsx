@@ -424,7 +424,8 @@ export default function HealthRiskApp() {
     history: false,
     twoFactor: false,
     advancedReasoning: true,
-    voiceFeedback: true,
+    voiceFeedback: false,
+    autoReadChat: false,
     highPerformance: false,
     autoExport: false,
     cloudSync: true
@@ -458,6 +459,41 @@ export default function HealthRiskApp() {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState<string | null>(null);
+  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const speakText = (text: string, id: string) => {
+    if (typeof window === 'undefined') return;
+    
+    if (isSpeaking === id) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(null);
+      return;
+    }
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => setIsSpeaking(null);
+    speechRef.current = utterance;
+    setIsSpeaking(id);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    if (typeof window !== 'undefined') {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(null);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [healthHistory, setHealthHistory] = useState<any[]>([]);
   const [exportProgress, setExportProgress] = useState<number | null>(null);
@@ -534,18 +570,20 @@ export default function HealthRiskApp() {
     }
 
     setExportStatus(`Preparing ${format}...`);
-    setExportProgress(0);
-
-    // Simulate progress
-    const interval = setInterval(() => {
-      setExportProgress(prev => {
-        if (prev === null || prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 5;
-      });
-    }, 100);
+    
+    // Only simulate progress for PDF which takes longer
+    if (format === 'PDF Report') {
+      setExportProgress(0);
+      const interval = setInterval(() => {
+        setExportProgress(prev => {
+          if (prev === null || prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+    }
 
     setTimeout(async () => {
       try {
@@ -656,19 +694,34 @@ export default function HealthRiskApp() {
       }
     }, 2000);
   };
+  const handleTabChange = (tab: string) => {
+    stopSpeaking();
+    setActiveTab(tab);
+  };
+
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      if (!result) {
+        throw new Error("Login failed. Please check if popups are blocked.");
+      }
       setShowAuthModal(false);
     } catch (error: any) {
       console.error("Login failed:", error);
+      if (error.code === 'auth/popup-blocked') {
+        alert("Please allow popups for this site to sign in with Google.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        alert("This domain is not authorized for Google Sign-in. Please contact support.");
+      } else {
+        alert("Login failed: " + error.message);
+      }
     }
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setActiveTab('home');
+      handleTabChange('home');
       setShowSettings(false);
       setIsVoiceMode(false);
     } catch (error) {
@@ -879,7 +932,8 @@ export default function HealthRiskApp() {
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Voice & Audio</h4>
           <div className="space-y-2">
             {[
-              { id: 'voiceFeedback', icon: Volume2, label: 'Voice Feedback', desc: 'Elena will speak her responses aloud' }
+              { id: 'voiceFeedback', icon: Volume2, label: 'Elena Voice', desc: 'Elena will speak health insights aloud' },
+              { id: 'autoReadChat', icon: MessageSquare, label: 'Auto-read Chat', desc: 'Automatically read chat replies' }
             ].map((item) => (
               <div 
                 key={item.id} 
@@ -1358,7 +1412,17 @@ export default function HealthRiskApp() {
 
     const startVoiceSession = async () => {
       try {
+        if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
+          setConnectionStatus("API Key Missing");
+          alert("Please set your Gemini API key in the settings to use Voice Mode.");
+          setTimeout(() => setIsVoiceMode(false), 2000);
+          return;
+        }
+
         setConnectionStatus("Requesting Microphone...");
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error("Microphone access is not supported in this browser.");
+        }
         const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
         
         // Initialize Audio Context
@@ -1378,7 +1442,7 @@ export default function HealthRiskApp() {
         sessionRef.current = await ai.live.connect({
           model: "gemini-2.5-flash-native-audio-preview-12-2025",
           config: {
-            systemInstruction: `You are Elena, a supportive and professional health companion. Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. Be flexible, natural, and conversational in your responses, similar to ChatGPT. DO NOT repeat your name or greetings in every response. DO NOT repeat the user's name frequently. Focus on being helpful and direct.`,
+            systemInstruction: `You are Elena, a supportive and professional health companion. Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. Be flexible, natural, and conversational in your responses, similar to ChatGPT. DO NOT repeat your name or greetings in every response. DO NOT repeat the user's name frequently. Focus on being helpful and direct. Avoid repeating the same phrases or words in a single response. Provide concise and varied answers.`,
             responseModalities: [Modality.AUDIO],
             speechConfig: {
               voiceConfig: { prebuiltVoiceConfig: { voiceName: "Zephyr" } }
@@ -1675,7 +1739,7 @@ export default function HealthRiskApp() {
     });
     
     setPredictionLoading(false);
-    setActiveTab('results');
+    handleTabChange('results');
 
     // Generate AI Insights
     generateAIInsights(smokingProb, drinkingProb);
@@ -1702,10 +1766,16 @@ export default function HealthRiskApp() {
         });
         const insight = response.text;
         setPredictionResult((prev: any) => ({ ...prev, insight }));
+        if (settings.voiceFeedback) {
+          speakText(insight, Date.now().toString());
+        }
       } else {
         // Fallback mock insight
         const insight = `Based on your metrics, your smoking risk is ${(smoking * 100).toFixed(1)}% and drinking risk is ${(drinking * 100).toFixed(1)}%. Your hemoglobin and blood pressure levels are within a healthy range, which is a great sign. Consider maintaining your current physical activity levels to keep these markers stable.`;
         setPredictionResult((prev: any) => ({ ...prev, insight }));
+        if (settings.voiceFeedback) {
+          speakText(insight, Date.now().toString());
+        }
       }
     } catch (e) {
       console.error("AI Insight failed:", e);
@@ -1726,6 +1796,9 @@ export default function HealthRiskApp() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() && !selectedImage) return;
 
+    // Stop any ongoing speech when user sends a message
+    stopSpeaking();
+
     const userMsg: any = { role: 'user', content: inputMessage };
     if (selectedImage) {
       userMsg.image = selectedImage;
@@ -1744,7 +1817,7 @@ export default function HealthRiskApp() {
       if (process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
         const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
         
-        let systemPrompt = `You are Elena, a supportive and professional health companion. Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. Be flexible, natural, and conversational in your responses, similar to ChatGPT. DO NOT repeat your name or greetings in every response. DO NOT repeat the user's name frequently. Focus on being helpful and direct. If an image is provided, analyze it for health metrics or medical information.`;
+        let systemPrompt = `You are Elena, a supportive and professional health companion. Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. Be flexible, natural, and conversational in your responses, similar to ChatGPT. DO NOT repeat your name or greetings in every response. DO NOT repeat the user's name frequently. Focus on being helpful and direct. Avoid repeating the same phrases or words in a single response. Provide concise and varied answers. If an image is provided, analyze it for health metrics or medical information.`;
         
         if (settings.advancedReasoning) {
           systemPrompt += " Use advanced medical reasoning and provide detailed scientific context where appropriate.";
@@ -1779,12 +1852,8 @@ export default function HealthRiskApp() {
         aiResponse = response.text || aiResponse;
         
         // Voice Feedback
-        if (settings.voiceFeedback && typeof window !== 'undefined' && window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(aiResponse);
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
-          window.speechSynthesis.speak(utterance);
+        if (settings.autoReadChat) {
+          speakText(aiResponse, Date.now().toString());
         }
       } else {
         // Mock response
@@ -1820,7 +1889,7 @@ export default function HealthRiskApp() {
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => handleTabChange(item.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
                 activeTab === item.id 
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
@@ -1871,7 +1940,7 @@ export default function HealthRiskApp() {
                   </p>
                   <div className="flex gap-4 pt-2">
                     <button 
-                      onClick={() => setActiveTab('predict')}
+                      onClick={() => handleTabChange('predict')}
                       className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
                     >
                       Start Analysis
@@ -1975,7 +2044,7 @@ export default function HealthRiskApp() {
               </section>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <GlassCard className="p-6 space-y-4 group cursor-pointer hover:border-blue-500/50 transition-colors" onClick={() => setActiveTab('predict')}>
+                <GlassCard className="p-6 space-y-4 group cursor-pointer hover:border-blue-500/50 transition-colors" onClick={() => handleTabChange('predict')}>
                   <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
                     <Brain size={24} />
                   </div>
@@ -1988,7 +2057,7 @@ export default function HealthRiskApp() {
                   </div>
                 </GlassCard>
 
-                <GlassCard className="p-6 space-y-4 group cursor-pointer hover:border-purple-500/50 transition-colors" onClick={() => setActiveTab('chat')}>
+                <GlassCard className="p-6 space-y-4 group cursor-pointer hover:border-purple-500/50 transition-colors" onClick={() => handleTabChange('chat')}>
                   <div className="w-12 h-12 rounded-xl bg-purple-600/20 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
                     <MessageSquare size={24} />
                   </div>
@@ -2018,7 +2087,7 @@ export default function HealthRiskApp() {
                         <p className="text-slate-500 text-xs">{new Date(predictionResult.timestamp).toLocaleString()}</p>
                       </div>
                     </div>
-                    <button onClick={() => setActiveTab('results')} className="text-blue-500 text-sm font-medium hover:underline">View Results</button>
+                    <button onClick={() => handleTabChange('results')} className="text-blue-500 text-sm font-medium hover:underline">View Results</button>
                   </GlassCard>
                 ) : (
                   <div className="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
@@ -2041,7 +2110,7 @@ export default function HealthRiskApp() {
                   ].map((app, i) => (
                     <GlassCard 
                       key={i} 
-                      onClick={() => setActiveTab('chat')}
+                      onClick={() => handleTabChange('chat')}
                       className="p-5 space-y-3 hover:bg-white/5 transition-colors cursor-pointer"
                     >
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${app.color}`}>
@@ -2058,7 +2127,7 @@ export default function HealthRiskApp() {
 
               {/* Smoking & Drinking Awareness Section */}
               <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="relative h-48 rounded-2xl overflow-hidden group cursor-pointer" onClick={() => setActiveTab('chat')}>
+                <div className="relative h-48 rounded-2xl overflow-hidden group cursor-pointer" onClick={() => handleTabChange('chat')}>
                   <Image 
                     src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=800&q=80" 
                     alt="Smoking Awareness" 
@@ -2071,7 +2140,7 @@ export default function HealthRiskApp() {
                     <p className="text-xs text-slate-400 mt-1">Resources and support to help you quit for good.</p>
                   </div>
                 </div>
-                <div className="relative h-48 rounded-2xl overflow-hidden group cursor-pointer" onClick={() => setActiveTab('chat')}>
+                <div className="relative h-48 rounded-2xl overflow-hidden group cursor-pointer" onClick={() => handleTabChange('chat')}>
                   <Image 
                     src="https://images.unsplash.com/photo-1520174691701-bc555a3404ca?auto=format&fit=crop&w=800&q=80" 
                     alt="Drinking Awareness" 
@@ -2300,13 +2369,13 @@ export default function HealthRiskApp() {
                   Download Report
                 </button>
                 <button 
-                  onClick={() => setActiveTab('predict')}
+                  onClick={() => handleTabChange('predict')}
                   className="px-6 py-3 rounded-xl bg-slate-800 text-white font-medium hover:bg-slate-700 transition-colors"
                 >
                   Adjust Metrics
                 </button>
                 <button 
-                  onClick={() => setActiveTab('chat')}
+                  onClick={() => handleTabChange('chat')}
                   className="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20"
                 >
                   Discuss with Elena
@@ -2339,8 +2408,20 @@ export default function HealthRiskApp() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    {isSpeaking && (
+                      <button 
+                        onClick={stopSpeaking}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors animate-pulse"
+                        title="Stop reading"
+                      >
+                        <VolumeX size={18} />
+                      </button>
+                    )}
                     <button 
-                      onClick={() => setIsVoiceMode(true)}
+                      onClick={() => {
+                        stopSpeaking();
+                        setIsVoiceMode(true);
+                      }}
                       className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                     >
                       <Mic size={18} />
@@ -2369,6 +2450,21 @@ export default function HealthRiskApp() {
                           </div>
                         )}
                         {msg.content && <div>{msg.content}</div>}
+                        {msg.role === 'assistant' && (
+                          <div className="flex justify-end pt-2">
+                            <button 
+                              onClick={() => speakText(msg.content, idx.toString())}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isSpeaking === idx.toString() 
+                                  ? 'bg-blue-500 text-white' 
+                                  : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+                              }`}
+                              title={isSpeaking === idx.toString() ? "Stop reading" : "Read aloud"}
+                            >
+                              {isSpeaking === idx.toString() ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
