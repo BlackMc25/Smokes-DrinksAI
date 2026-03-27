@@ -403,7 +403,13 @@ const AuthModal = ({
 };
 
 export default function HealthRiskApp() {
+  const [isMounted, setIsMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [modelsLoaded, setModelsLoaded] = useState(false);
@@ -463,7 +469,7 @@ export default function HealthRiskApp() {
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const speakText = (text: string, id: string) => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !settings.voiceFeedback) return;
     
     if (isSpeaking === id) {
       window.speechSynthesis.cancel();
@@ -732,7 +738,16 @@ export default function HealthRiskApp() {
   // --- Settings Modal ---
   const SettingsModal = () => {
     const toggleSetting = (key: keyof typeof settings) => {
-      setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+      const newValue = !settings[key];
+      setSettings(prev => ({ ...prev, [key]: newValue }));
+      
+      // Sync voice activities
+      if ((key === 'voiceFeedback' || key === 'autoReadChat') && newValue === false) {
+        stopSpeaking();
+        if (key === 'voiceFeedback') {
+          setIsVoiceMode(false);
+        }
+      }
     };
 
     const renderMain = () => (
@@ -933,22 +948,22 @@ export default function HealthRiskApp() {
           <div className="space-y-2">
             {[
               { id: 'voiceFeedback', icon: Volume2, label: 'Elena Voice', desc: 'Elena will speak health insights aloud' },
-              { id: 'autoReadChat', icon: MessageSquare, label: 'Auto-read Chat', desc: 'Automatically read chat replies' }
+              { id: 'autoReadChat', icon: MessageSquare, label: 'Auto-read Chat', desc: 'Automatically read chat replies', disabled: !settings.voiceFeedback }
             ].map((item) => (
               <div 
                 key={item.id} 
-                onClick={() => toggleSetting(item.id as keyof typeof settings)}
-                className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group"
+                onClick={() => !item.disabled && toggleSetting(item.id as keyof typeof settings)}
+                className={`flex items-center justify-between p-4 bg-white/5 rounded-2xl transition-all ${item.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer group'}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className="text-slate-400 group-hover:text-blue-500 transition-colors"><item.icon size={20} /></div>
+                  <div className={`transition-colors ${item.disabled ? 'text-slate-600' : 'text-slate-400 group-hover:text-blue-500'}`}><item.icon size={20} /></div>
                   <div>
-                    <p className="text-sm font-medium text-white">{item.label}</p>
+                    <p className={`text-sm font-medium ${item.disabled ? 'text-slate-500' : 'text-white'}`}>{item.label}</p>
                     <p className="text-xs text-slate-500">{item.desc}</p>
                   </div>
                 </div>
-                <div className={`w-10 h-5 rounded-full relative transition-colors ${settings[item.id as keyof typeof settings] ? 'bg-blue-600' : 'bg-slate-700'}`}>
-                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${settings[item.id as keyof typeof settings] ? 'right-1' : 'left-1'}`} />
+                <div className={`w-10 h-5 rounded-full relative transition-colors ${settings[item.id as keyof typeof settings] && !item.disabled ? 'bg-blue-600' : 'bg-slate-700'}`}>
+                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${settings[item.id as keyof typeof settings] && !item.disabled ? 'right-1' : 'left-1'}`} />
                 </div>
               </div>
             ))}
@@ -1442,7 +1457,13 @@ export default function HealthRiskApp() {
         sessionRef.current = await ai.live.connect({
           model: "gemini-2.5-flash-native-audio-preview-12-2025",
           config: {
-            systemInstruction: `You are Elena, a supportive and professional health companion. Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. Be flexible, natural, and conversational in your responses, similar to ChatGPT. DO NOT repeat your name or greetings in every response. DO NOT repeat the user's name frequently. Focus on being helpful and direct. Avoid repeating the same phrases or words in a single response. Provide concise and varied answers.`,
+            systemInstruction: `You are Elena, a supportive and professional health companion. 
+            Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. 
+            
+            CRITICAL: Be flexible, natural, and conversational. Use a wide range of vocabulary and sentence structures. 
+            Avoid starting every sentence with the same words. Don't repeat your name or greetings in every response. 
+            Don't repeat the user's name frequently. Focus on being helpful, direct, and varied in your expressions. 
+            Provide unique and creative responses that feel human, not like a template.`,
             responseModalities: [Modality.AUDIO],
             speechConfig: {
               voiceConfig: { prebuiltVoiceConfig: { voiceName: "Zephyr" } }
@@ -1755,7 +1776,9 @@ export default function HealthRiskApp() {
   };
 
   const generateAIInsights = async (smoking: number, drinking: number) => {
-    const prompt = `As a health AI, provide a brief (2-3 sentences) insight for a patient with a smoking risk of ${(smoking * 100).toFixed(1)}% and a drinking risk of ${(drinking * 100).toFixed(1)}%. Be encouraging but professional.`;
+    const prompt = `As a health AI, provide a brief (2-3 sentences) insight for a patient with a smoking risk of ${(smoking * 100).toFixed(1)}% and a drinking risk of ${(drinking * 100).toFixed(1)}%. 
+    Be encouraging, professional, and use varied vocabulary. Avoid repetitive sentence structures. 
+    Don't just state the numbers; provide a unique perspective on what they mean for the patient's long-term health.`;
     
     try {
       if (process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
@@ -1763,6 +1786,11 @@ export default function HealthRiskApp() {
         const response = await ai.models.generateContent({
           model: "gemini-3-flash-preview",
           contents: prompt,
+          config: {
+            temperature: 1,
+            topP: 0.95,
+            topK: 64,
+          }
         });
         const insight = response.text;
         setPredictionResult((prev: any) => ({ ...prev, insight }));
@@ -1817,7 +1845,13 @@ export default function HealthRiskApp() {
       if (process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
         const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
         
-        let systemPrompt = `You are Elena, a supportive and professional health companion. Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. Be flexible, natural, and conversational in your responses, similar to ChatGPT. DO NOT repeat your name or greetings in every response. DO NOT repeat the user's name frequently. Focus on being helpful and direct. Avoid repeating the same phrases or words in a single response. Provide concise and varied answers. If an image is provided, analyze it for health metrics or medical information.`;
+        let systemPrompt = `You are Elena, a supportive and professional health companion. 
+        Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. 
+        
+        CRITICAL: Be flexible, natural, and conversational. Use a wide range of vocabulary and sentence structures. 
+        Avoid starting every sentence with the same words. Don't repeat your name or greetings in every response. 
+        Don't repeat the user's name frequently. Focus on being helpful, direct, and varied in your expressions. 
+        Provide unique and creative responses that feel human, not like a template.`;
         
         if (settings.advancedReasoning) {
           systemPrompt += " Use advanced medical reasoning and provide detailed scientific context where appropriate.";
@@ -1825,6 +1859,13 @@ export default function HealthRiskApp() {
         if (settings.highPerformance) {
           systemPrompt += " Be extremely concise and prioritize speed in your response.";
         }
+
+        const chatConfig = {
+          systemInstruction: systemPrompt,
+          temperature: 1,
+          topP: 0.95,
+          topK: 64,
+        };
 
         let response;
         if (currentImage) {
@@ -1839,12 +1880,20 @@ export default function HealthRiskApp() {
                 { text: currentInput || "Analyze this health-related image." },
                 { inlineData: { data: base64Data, mimeType } }
               ]}
-            ]
+            ],
+            config: chatConfig
           });
         } else {
+          // Map history to Gemini format
+          const history = messages.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+          }));
+
           const chat = ai.chats.create({ 
             model: "gemini-3-flash-preview",
-            config: { systemInstruction: systemPrompt }
+            config: chatConfig,
+            history: history
           });
           response = await chat.sendMessage({ message: currentInput });
         }
@@ -1868,6 +1917,10 @@ export default function HealthRiskApp() {
       setIsTyping(false);
     }
   };
+
+  if (!isMounted) {
+    return <div className="min-h-screen bg-slate-950" />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30">
@@ -2417,15 +2470,18 @@ export default function HealthRiskApp() {
                         <VolumeX size={18} />
                       </button>
                     )}
-                    <button 
-                      onClick={() => {
-                        stopSpeaking();
-                        setIsVoiceMode(true);
-                      }}
-                      className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                    >
-                      <Mic size={18} />
-                    </button>
+                    {settings.voiceFeedback && (
+                      <button 
+                        onClick={() => {
+                          stopSpeaking();
+                          setIsVoiceMode(true);
+                        }}
+                        className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        title="Start Voice Mode"
+                      >
+                        <Mic size={18} />
+                      </button>
+                    )}
                     <button 
                       onClick={() => setShowSettings(true)}
                       className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
@@ -2450,7 +2506,7 @@ export default function HealthRiskApp() {
                           </div>
                         )}
                         {msg.content && <div>{msg.content}</div>}
-                        {msg.role === 'assistant' && (
+                        {msg.role === 'assistant' && settings.voiceFeedback && (
                           <div className="flex justify-end pt-2">
                             <button 
                               onClick={() => speakText(msg.content, idx.toString())}
