@@ -31,6 +31,7 @@ import {
   Zap,
   UserPlus,
   X,
+  Key,
   Volume2,
   VolumeX,
   History,
@@ -460,7 +461,8 @@ export default function HealthRiskApp() {
     autoReadChat: false,
     highPerformance: false,
     autoExport: false,
-    cloudSync: true
+    cloudSync: true,
+    geminiKey: ''
   });
   
   // Models
@@ -953,6 +955,28 @@ export default function HealthRiskApp() {
 
     const renderAI = () => (
       <div className="p-6 space-y-6">
+        <div className="space-y-4">
+          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">API Configuration</h4>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-slate-400">Gemini API Key</label>
+              <div className="relative">
+                <input 
+                  type="password"
+                  value={settings.geminiKey}
+                  onChange={(e) => setSettings(prev => ({ ...prev, geminiKey: e.target.value }))}
+                  placeholder={process.env.NEXT_PUBLIC_GEMINI_API_KEY ? "Using environment key..." : "Enter your Gemini API key"}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-colors"
+                />
+                <Key className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+              </div>
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                Your API key is stored locally in your browser. For production, set <code className="text-blue-400/70">NEXT_PUBLIC_GEMINI_API_KEY</code> in your environment.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-4">
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Intelligence</h4>
           <div className="space-y-2">
@@ -1464,7 +1488,8 @@ export default function HealthRiskApp() {
 
     const startVoiceSession = async () => {
       try {
-        if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
+        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || settings.geminiKey;
+        if (!apiKey) {
           setConnectionStatus("API Key Missing");
           alert("Please set your Gemini API key in the settings to use Voice Mode.");
           setTimeout(() => setIsVoiceMode(false), 2000);
@@ -1475,7 +1500,7 @@ export default function HealthRiskApp() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           throw new Error("Microphone access is not supported in this browser.");
         }
-        const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
+        const ai = new GoogleGenAI({ apiKey });
         
         // Initialize Audio Context
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
@@ -1492,15 +1517,17 @@ export default function HealthRiskApp() {
         
         setConnectionStatus("Establishing Live Connection...");
         sessionRef.current = await ai.live.connect({
-          model: "gemini-2.5-flash-native-audio-preview-12-2025",
+          model: "gemini-3.1-flash-live-preview",
           config: {
-            systemInstruction: `You are Elena, a supportive and professional health companion. 
-            Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. 
+            systemInstruction: `You are Elena, a supportive and professional health companion for Smoking&DrinkingHealth.AI. 
+            Your knowledge is strictly limited to health-related issues, specifically focusing on smoking, drinking, and general wellness. 
+            If asked about non-health topics, politely decline and steer the conversation back to health. 
             
             CRITICAL: Be flexible, natural, and conversational. Use a wide range of vocabulary and sentence structures. 
             Avoid starting every sentence with the same words. Don't repeat your name or greetings in every response. 
             Don't repeat the user's name frequently. Focus on being helpful, direct, and varied in your expressions. 
-            Provide unique and creative responses that feel human, not like a template.`,
+            Provide unique and creative responses that feel human, not like a template. 
+            Current time: ${new Date().toLocaleString()}.`,
             responseModalities: [Modality.AUDIO],
             speechConfig: {
               voiceConfig: { prebuiltVoiceConfig: { voiceName: "Zephyr" } }
@@ -1818,8 +1845,9 @@ export default function HealthRiskApp() {
     Don't just state the numbers; provide a unique perspective on what they mean for the patient's long-term health.`;
     
     try {
-      if (process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
-        const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
+      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || settings.geminiKey;
+      if (apiKey) {
+        const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
           model: "gemini-3-flash-preview",
           contents: prompt,
@@ -1878,17 +1906,20 @@ export default function HealthRiskApp() {
 
     try {
       let aiResponse = "I'm sorry, I'm having trouble connecting to my brain right now.";
+      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || settings.geminiKey;
       
-      if (process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
-        const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY });
+      if (apiKey) {
+        const ai = new GoogleGenAI({ apiKey });
         
-        let systemPrompt = `You are Elena, a supportive and professional health companion. 
-        Your knowledge is strictly limited to health-related issues. If asked about non-health topics, politely decline and steer the conversation back to health. 
+        let systemPrompt = `You are Elena, a supportive and professional health companion for Smoking&DrinkingHealth.AI. 
+        Your knowledge is strictly limited to health-related issues, specifically focusing on smoking, drinking, and general wellness. 
+        If asked about non-health topics, politely decline and steer the conversation back to health. 
         
         CRITICAL: Be flexible, natural, and conversational. Use a wide range of vocabulary and sentence structures. 
         Avoid starting every sentence with the same words. Don't repeat your name or greetings in every response. 
         Don't repeat the user's name frequently. Focus on being helpful, direct, and varied in your expressions. 
-        Provide unique and creative responses that feel human, not like a template.`;
+        Provide unique and creative responses that feel human, not like a template. 
+        Current time: ${new Date().toLocaleString()}.`;
         
         if (settings.advancedReasoning) {
           systemPrompt += " Use advanced medical reasoning and provide detailed scientific context where appropriate.";
