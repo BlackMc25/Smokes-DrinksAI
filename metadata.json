@@ -1,5 +1,5 @@
 {
-  "name": "Smoking&DrinkingWellness.AI",
+  "name": "Elena Health AI",
   "description": "An AI-powered wellness platform for monitoring and predicting smoking and drinking behaviors, featuring advanced analytics and personalized health insights.",
   "requestFramePermissions": [
     "microphone"

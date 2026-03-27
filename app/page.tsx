@@ -1970,14 +1970,14 @@ export default function HealthRiskApp() {
               <header className="space-y-2">
                 <h1 className="text-4xl font-bold tracking-tight text-white">
                   {user ? `Welcome back, ` : `Welcome to `}
-                  <span className="text-blue-500">{user ? user.displayName?.split(' ')[0] : 'Smoking&DrinkingWellness.AI'}</span>
+                  <span className="text-blue-500">{user ? user.displayName?.split(' ')[0] : 'Elena Health AI'}</span>
                 </h1>
                 <p className="text-slate-400 text-lg">
                   {user ? 'Your personalized health risk analysis dashboard.' : 'Advanced predictive analytics for a healthier, data-driven lifestyle.'}
                 </p>
               </header>
 
-              {/* Smoking&DrinkingWellness.AI Hero Section */}
+              {/* Elena Health AI Hero Section */}
               <GlassCard className="p-8 border-blue-500/30 bg-gradient-to-br from-blue-600/10 to-purple-600/10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-6 text-blue-500/10">
                   <Activity size={120} />
@@ -1986,7 +1986,7 @@ export default function HealthRiskApp() {
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest">
                     <Zap size={14} /> New Feature
                   </div>
-                  <h2 className="text-3xl font-bold text-white">Smoking&DrinkingWellness.AI</h2>
+                  <h2 className="text-3xl font-bold text-white">Elena Health AI</h2>
                   <p className="text-slate-300 max-w-2xl leading-relaxed">
                     Harness the power of advanced machine learning to transform your health data into actionable insights. 
                     Our XGBoost models analyze your unique metrics to provide precise risk assessments for smoking and drinking behaviors.
