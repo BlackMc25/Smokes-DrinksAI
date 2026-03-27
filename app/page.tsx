@@ -320,18 +320,6 @@ const AuthModal = ({
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setAuthError(null);
-    setLoading(true);
-    try {
-      await handleLogin();
-    } catch (error: any) {
-      setAuthError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <AnimatePresence>
       {showAuthModal && (
@@ -743,14 +731,14 @@ export default function HealthRiskApp() {
     setActiveTab(tab);
   };
 
-  const handleLogin = async (credential?: string) => {
+  const handleLogin = async (credential?: any) => {
     try {
-      if (credential) {
+      if (typeof credential === 'string') {
         // Handle GIS credential
         const authCredential = GoogleAuthProvider.credential(credential);
         await signInWithCredential(auth, authCredential);
       } else {
-        // Fallback to popup if no credential provided
+        // Fallback to popup if no credential provided (or if it's an event object)
         const result = await signInWithPopup(auth, googleProvider);
         if (!result) {
           throw new Error("Login failed. Please check if popups are blocked.");
@@ -759,6 +747,10 @@ export default function HealthRiskApp() {
       setShowAuthModal(false);
     } catch (error: any) {
       console.error("Login failed:", error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, do nothing or show a subtle message
+        return;
+      }
       if (error.code === 'auth/popup-blocked') {
         alert("Please allow popups for this site to sign in with Google.");
       } else if (error.code === 'auth/unauthorized-domain') {
@@ -2275,7 +2267,7 @@ export default function HealthRiskApp() {
                     </p>
                   </div>
                   <button
-                    onClick={handleLogin}
+                    onClick={() => { setAuthMode('signin'); setShowAuthModal(true); }}
                     className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2"
                   >
                     <LogIn size={20} />
@@ -2653,7 +2645,7 @@ export default function HealthRiskApp() {
                       </p>
                     </div>
                     <button
-                      onClick={handleLogin}
+                      onClick={() => { setAuthMode('signin'); setShowAuthModal(true); }}
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-500 transition-all flex items-center gap-2"
                     >
                       <LogIn size={18} />
