@@ -59,8 +59,16 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  signInWithCredential,
+  GoogleAuthProvider,
   type User 
 } from '../lib/firebase';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 import { 
   doc, 
   setDoc, 
@@ -244,13 +252,51 @@ const AuthModal = ({
   setShowAuthModal: (show: boolean) => void;
   authMode: 'signin' | 'signup';
   setAuthMode: (mode: 'signin' | 'signup') => void;
-  handleLogin: () => Promise<void>;
+  handleLogin: (credential?: string) => Promise<void>;
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (showAuthModal && window.google) {
+      const initializeGsi = () => {
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: async (response: any) => {
+            setLoading(true);
+            try {
+              await handleLogin(response.credential);
+              setShowAuthModal(false);
+            } catch (error: any) {
+              setAuthError(error.message);
+            } finally {
+              setLoading(false);
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        window.google.accounts.id.renderButton(
+          document.getElementById("google-signin-button"),
+          { 
+            theme: "outline", 
+            size: "large", 
+            width: "100%",
+            text: authMode === 'signin' ? "signin_with" : "signup_with",
+            shape: "pill"
+          }
+        );
+      };
+
+      // Small delay to ensure the div is rendered
+      const timer = setTimeout(initializeGsi, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showAuthModal, authMode]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -373,15 +419,7 @@ const AuthModal = ({
                   <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-900 px-2 text-slate-500">Or</span></div>
                 </div>
 
-                <button 
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  disabled={loading}
-                  className="w-full py-3 bg-white/5 text-white border border-white/10 rounded-xl font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Image src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width={18} height={18} alt="Google" />
-                  {loading ? 'Connecting...' : 'Continue with Google'}
-                </button>
+                <div id="google-signin-button" className="w-full flex justify-center min-h-[44px]"></div>
 
                 <p className="text-center text-sm text-slate-500">
                   {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}{' '}
@@ -643,7 +681,7 @@ export default function HealthRiskApp() {
           
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(22);
-          doc.text("ELENA HEALTH REPORT", 105, 20, { align: 'center' });
+          doc.text("SMOKING&DRINKINGHEALTH.AI REPORT", 105, 20, { align: 'center' });
           
           doc.setFontSize(10);
           doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 30, { align: 'center' });
@@ -677,7 +715,7 @@ export default function HealthRiskApp() {
             doc.setPage(i);
             doc.setFontSize(8);
             doc.setTextColor(150);
-            doc.text("Elena AI Health Assistant - Personalized Insights", 105, 285, { align: 'center' });
+            doc.text("Smoking&DrinkingHealth.AI - Personalized Insights", 105, 285, { align: 'center' });
             doc.text(`Page ${i} of ${pageCount}`, 190, 285);
           }
 
@@ -705,11 +743,18 @@ export default function HealthRiskApp() {
     setActiveTab(tab);
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (credential?: string) => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      if (!result) {
-        throw new Error("Login failed. Please check if popups are blocked.");
+      if (credential) {
+        // Handle GIS credential
+        const authCredential = GoogleAuthProvider.credential(credential);
+        await signInWithCredential(auth, authCredential);
+      } else {
+        // Fallback to popup if no credential provided
+        const result = await signInWithPopup(auth, googleProvider);
+        if (!result) {
+          throw new Error("Login failed. Please check if popups are blocked.");
+        }
       }
       setShowAuthModal(false);
     } catch (error: any) {
@@ -755,7 +800,7 @@ export default function HealthRiskApp() {
         {[
           { id: 'privacy', icon: Lock, label: 'Privacy & Security', desc: 'Manage your data and security' },
           { id: 'notifications', icon: Bell, label: 'Notifications', desc: 'Manage your alerts and reminders' },
-          { id: 'ai', icon: Brain, label: 'AI & Voice', desc: 'Configure Elena\'s intelligence' },
+          { id: 'ai', icon: Brain, label: 'AI & Voice', desc: 'Configure AI\'s intelligence' },
           { id: 'export', icon: Download, label: 'Data Export', desc: 'Download your health records' },
           { id: 'contact', icon: Mail, label: 'Contact Us', desc: 'Get in touch with our support team' }
         ].map((item) => (
@@ -947,7 +992,7 @@ export default function HealthRiskApp() {
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Voice & Audio</h4>
           <div className="space-y-2">
             {[
-              { id: 'voiceFeedback', icon: Volume2, label: 'Elena Voice', desc: 'Elena will speak health insights aloud' },
+              { id: 'voiceFeedback', icon: Volume2, label: 'AI Voice', desc: 'AI will speak health insights aloud' },
               { id: 'autoReadChat', icon: MessageSquare, label: 'Auto-read Chat', desc: 'Automatically read chat replies', disabled: !settings.voiceFeedback }
             ].map((item) => (
               <div 
@@ -1192,12 +1237,12 @@ export default function HealthRiskApp() {
 
           <div className="p-6 bg-blue-600/10 rounded-3xl border border-blue-500/20 space-y-4">
             <p className="text-sm text-blue-200 leading-relaxed">
-              "Your health and privacy are our top priorities. If you have any questions about your data or how Elena works, please don't hesitate to reach out."
+              "Your health and privacy are our top priorities. If you have any questions about your data or how Smoking&DrinkingHealth.AI works, please don't hesitate to reach out."
             </p>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs">E</div>
+              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs">S</div>
               <div>
-                <p className="text-xs font-bold text-white">Elena Support Team</p>
+                <p className="text-xs font-bold text-white">Smoking&DrinkingHealth.AI Support Team</p>
                 <p className="text-[10px] text-blue-400">Available 24/7</p>
               </div>
             </div>
@@ -1408,7 +1453,7 @@ export default function HealthRiskApp() {
   const VoiceMode = () => {
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState("");
-    const [isElenaSpeaking, setIsElenaSpeaking] = useState(false);
+    const [isAISpeaking, setIsAISpeaking] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState("Connecting...");
     const audioContextRef = useRef<AudioContext | null>(null);
     const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -1501,7 +1546,7 @@ export default function HealthRiskApp() {
                 const parts = message.serverContent.modelTurn.parts;
                 for (const part of parts) {
                   if (part?.inlineData) {
-                    setIsElenaSpeaking(true);
+                    setIsAISpeaking(true);
                     playAudioResponse(part.inlineData.data);
                   }
                   if (part?.text) {
@@ -1535,7 +1580,7 @@ export default function HealthRiskApp() {
       processorRef.current?.disconnect();
       audioContextRef.current?.close();
       setIsListening(false);
-      setIsElenaSpeaking(false);
+      setIsAISpeaking(false);
       setTranscript("");
       stopAudioPlayback();
     };
@@ -1569,14 +1614,14 @@ export default function HealthRiskApp() {
       
       source.onended = () => {
         if (audioContextRef.current && audioContextRef.current.currentTime >= nextStartTimeRef.current - 0.1) {
-          setIsElenaSpeaking(false);
+          setIsAISpeaking(false);
         }
       };
       audioSourcesRef.current.push(source);
     };
 
     const stopAudioPlayback = () => {
-      setIsElenaSpeaking(false);
+      setIsAISpeaking(false);
       audioSourcesRef.current.forEach(source => {
         try { source.stop(); } catch(e) {}
       });
@@ -1604,7 +1649,7 @@ export default function HealthRiskApp() {
             <div className="absolute top-0 left-0 right-0 p-8 flex justify-between items-center z-20">
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
-                <span className="text-xs font-bold text-white/50 uppercase tracking-[0.2em]">Elena Live</span>
+                <span className="text-xs font-bold text-white/50 uppercase tracking-[0.2em]">AI Live</span>
               </div>
               <button 
                 onClick={() => setIsVoiceMode(false)}
@@ -1621,36 +1666,36 @@ export default function HealthRiskApp() {
               <div className="relative">
                 <motion.div 
                   animate={{ 
-                    scale: isElenaSpeaking ? [1, 1.15, 1] : isListening ? [1, 1.05, 1] : 1,
+                    scale: isAISpeaking ? [1, 1.15, 1] : isListening ? [1, 1.05, 1] : 1,
                   }}
                   transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                   className="relative w-64 h-64 rounded-full flex items-center justify-center"
                 >
                   {/* Outer Glows */}
                   <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-1000 ${
-                    isElenaSpeaking ? 'bg-blue-500/30 scale-125' : isListening ? 'bg-emerald-500/20 scale-110' : 'bg-white/5'
+                    isAISpeaking ? 'bg-blue-500/30 scale-125' : isListening ? 'bg-emerald-500/20 scale-110' : 'bg-white/5'
                   }`} />
                   
                   {/* Glass Surface */}
                   <div className="absolute inset-0 rounded-full bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl overflow-hidden">
                     <Image 
                       src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80" 
-                      alt="Elena" 
+                      alt="AI" 
                       fill
-                      className={`object-cover transition-all duration-1000 ${isElenaSpeaking ? 'scale-110 grayscale-0' : 'scale-100 grayscale-[0.5]'}`}
+                      className={`object-cover transition-all duration-1000 ${isAISpeaking ? 'scale-110 grayscale-0' : 'scale-100 grayscale-[0.5]'}`}
                       referrerPolicy="no-referrer"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/80 via-transparent to-transparent" />
                   </div>
 
                   {/* Waveform Overlay */}
-                  {(isListening || isElenaSpeaking) && (
+                  {(isListening || isAISpeaking) && (
                     <div className="absolute bottom-8 left-0 right-0 flex justify-center items-end gap-1 h-12">
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                         <motion.div 
                           key={i}
                           animate={{ 
-                            height: isElenaSpeaking ? [8, 32, 12, 40, 8] : [4, 12, 4, 16, 4],
+                            height: isAISpeaking ? [8, 32, 12, 40, 8] : [4, 12, 4, 16, 4],
                             opacity: [0.4, 1, 0.4]
                           }}
                           transition={{ 
@@ -1658,7 +1703,7 @@ export default function HealthRiskApp() {
                             duration: 0.6 + (i * 0.1), 
                             ease: "easeInOut" 
                           }}
-                          className={`w-1 rounded-full ${isElenaSpeaking ? 'bg-blue-400' : 'bg-emerald-400'}`}
+                          className={`w-1 rounded-full ${isAISpeaking ? 'bg-blue-400' : 'bg-emerald-400'}`}
                         />
                       ))}
                     </div>
@@ -1675,7 +1720,7 @@ export default function HealthRiskApp() {
                     stroke="currentColor"
                     strokeWidth="1"
                     strokeDasharray="4 8"
-                    className={`${isElenaSpeaking ? 'text-blue-500/50' : isListening ? 'text-emerald-500/50' : 'text-white/10'}`}
+                    className={`${isAISpeaking ? 'text-blue-500/50' : isListening ? 'text-emerald-500/50' : 'text-white/10'}`}
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
                   />
@@ -1937,7 +1982,7 @@ export default function HealthRiskApp() {
           {[
             { id: 'home', icon: Activity, label: 'Home' },
             { id: 'predict', icon: Brain, label: 'Predict' },
-            { id: 'chat', icon: MessageSquare, label: 'Elena' },
+            { id: 'chat', icon: MessageSquare, label: 'AI' },
             { id: 'profile', icon: UserIcon, label: 'Profile' }
           ].map((item) => (
             <button
@@ -1970,14 +2015,14 @@ export default function HealthRiskApp() {
               <header className="space-y-2">
                 <h1 className="text-4xl font-bold tracking-tight text-white">
                   {user ? `Welcome back, ` : `Welcome to `}
-                  <span className="text-blue-500">{user ? user.displayName?.split(' ')[0] : 'Elena Health AI'}</span>
+                  <span className="text-blue-500">{user ? user.displayName?.split(' ')[0] : 'Elena'}</span>
                 </h1>
                 <p className="text-slate-400 text-lg">
                   {user ? 'Your personalized health risk analysis dashboard.' : 'Advanced predictive analytics for a healthier, data-driven lifestyle.'}
                 </p>
               </header>
 
-              {/* Elena Health AI Hero Section */}
+              {/* Smoking&DrinkingHealth.AI Hero Section */}
               <GlassCard className="p-8 border-blue-500/30 bg-gradient-to-br from-blue-600/10 to-purple-600/10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-6 text-blue-500/10">
                   <Activity size={120} />
@@ -1986,7 +2031,7 @@ export default function HealthRiskApp() {
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest">
                     <Zap size={14} /> New Feature
                   </div>
-                  <h2 className="text-3xl font-bold text-white">Elena Health AI</h2>
+                  <h2 className="text-3xl font-bold text-white">Smoking&DrinkingHealth.AI</h2>
                   <p className="text-slate-300 max-w-2xl leading-relaxed">
                     Harness the power of advanced machine learning to transform your health data into actionable insights. 
                     Our XGBoost models analyze your unique metrics to provide precise risk assessments for smoking and drinking behaviors.
@@ -2115,7 +2160,7 @@ export default function HealthRiskApp() {
                     <MessageSquare size={24} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-white">Talk to Elena</h3>
+                    <h3 className="text-xl font-semibold text-white">Talk to AI</h3>
                     <p className="text-slate-400 text-sm mt-1">Get instant health insights and advice from your AI companion.</p>
                   </div>
                   <div className="flex items-center text-purple-500 text-sm font-medium gap-1">
@@ -2406,7 +2451,7 @@ export default function HealthRiskApp() {
                       <Brain size={20} />
                     </div>
                     <div className="space-y-2">
-                      <h4 className="text-white font-bold">Elena's AI Insight</h4>
+                      <h4 className="text-white font-bold">AI Insight</h4>
                       <p className="text-slate-300 leading-relaxed italic">"{predictionResult.insight}"</p>
                     </div>
                   </div>
@@ -2431,7 +2476,7 @@ export default function HealthRiskApp() {
                   onClick={() => handleTabChange('chat')}
                   className="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20"
                 >
-                  Discuss with Elena
+                  Discuss with AI
                 </button>
               </div>
             </motion.div>
@@ -2451,7 +2496,7 @@ export default function HealthRiskApp() {
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold">
-                        E
+                        S
                       </div>
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" />
                     </div>

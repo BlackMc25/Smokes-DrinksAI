@@ -227,7 +227,7 @@
                 setPredictionLoading(false);
                 setActiveTab('results');
                 
-                // Elena comments on results
+                // AI comments on results
                 const comment = `I've analyzed your data. Your smoking risk is ${(s*100).toFixed(1)}% and drinking risk is ${(d*100).toFixed(1)}%. Let's talk about what this means in the chat!`;
                 setMessages(prev => [...prev, { role: 'assistant', content: comment }]);
             };
@@ -295,7 +295,7 @@
                             {[
                                 { id: 'home', icon: 'home', label: 'Home' },
                                 { id: 'predict', icon: 'brain', label: 'Predict' },
-                                { id: 'chat', icon: 'message-square', label: 'Elena' }
+                                { id: 'chat', icon: 'message-square', label: 'AI' }
                             ].map(item => (
                                 <button 
                                     key={item.id}
@@ -331,7 +331,7 @@
                                         <div className="w-14 h-14 bg-purple-600/20 rounded-2xl flex items-center justify-center text-purple-500 mb-6 group-hover:scale-110 transition-transform">
                                             <Icon name="message-square" size={28} />
                                         </div>
-                                        <h3 className="text-2xl font-bold text-white mb-2">Talk to Elena</h3>
+                                        <h3 className="text-2xl font-bold text-white mb-2">Talk to AI</h3>
                                         <p className="text-slate-400 mb-6">Discuss your results and get personalized health advice from our AI.</p>
                                         <div className="flex items-center text-purple-500 font-bold gap-2">Open Chat <Icon name="arrow-right" size={16} /></div>
                                     </GlassCard>
@@ -455,7 +455,7 @@
                                 
                                 <div className="flex justify-center gap-4">
                                     <button onClick={() => setActiveTab('predict')} className="px-8 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors">Adjust Data</button>
-                                    <button onClick={() => setActiveTab('chat')} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors">Talk to Elena</button>
+                                    <button onClick={() => setActiveTab('chat')} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors">Talk to AI</button>
                                 </div>
                             </div>
                         )}
