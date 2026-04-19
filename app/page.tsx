@@ -3,19 +3,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Activity, 
-  Wind, 
-  Beer, 
-  MessageSquare, 
-  User as UserIcon, 
-  Settings, 
-  ChevronRight, 
+import {
+  Activity,
+  Wind,
+  Beer,
+  MessageSquare,
+  User as UserIcon,
+  Settings,
+  ChevronRight,
   ArrowLeft,
-  AlertCircle, 
-  CheckCircle2, 
-  TrendingUp, 
-  Mic, 
+  AlertCircle,
+  CheckCircle2,
+  TrendingUp,
+  Mic,
   MicOff,
   Send,
   ArrowRight,
@@ -50,19 +50,19 @@ import {
   Trash2
 } from 'lucide-react';
 import { GoogleGenAI, Modality } from "@google/genai";
-import { 
-  auth, 
+import {
+  auth,
   db,
-  googleProvider, 
-  signInWithPopup, 
-  signOut, 
-  onAuthStateChanged, 
+  googleProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
   signInWithCredential,
   GoogleAuthProvider,
-  type User 
+  type User
 } from '../lib/firebase';
 
 declare global {
@@ -70,14 +70,14 @@ declare global {
     google: any;
   }
 }
-import { 
-  doc, 
-  setDoc, 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot 
+import {
+  doc,
+  setDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot
 } from 'firebase/firestore';
 
 // --- XGBoost Predictor Logic ---
@@ -100,9 +100,9 @@ class XGBPredictor {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Failed to load model from ${url}`);
       this.model = await response.json();
-      
+
       this.featureNames = this.model.learner.feature_names || [];
-      
+
       const baseScoreStr = this.model.learner.learner_model_param?.base_score;
       if (baseScoreStr) {
         try {
@@ -135,10 +135,10 @@ class XGBPredictor {
       return isNaN(num) ? NaN : num;
     });
     const trees = this.model.learner.gradient_booster.model.trees;
-    
+
     if (this.numClasses > 1) {
       const scores = new Array(this.numClasses).fill(0);
-      
+
       if (Array.isArray(this.baseScore)) {
         for (let i = 0; i < this.numClasses; i++) {
           scores[i] = this.baseScore[i] || 0;
@@ -185,9 +185,9 @@ class XGBPredictor {
       const featureIdx = tree.split_indices[nodeIdx];
       const condition = tree.split_conditions[nodeIdx];
       const defaultLeft = tree.default_left ? tree.default_left[nodeIdx] : true;
-      
+
       const val = features[featureIdx];
-      
+
       if (val === undefined || val === null || isNaN(val)) {
         nodeIdx = defaultLeft ? leftChild : rightChild;
       } else if (val < condition) {
@@ -242,14 +242,14 @@ const SelectField = ({ label, value, onChange, options, id, placeholder = "Selec
 // --- Main App ---
 
 // --- Auth Modal ---
-const AuthModal = ({ 
-  showAuthModal, 
+const AuthModal = ({
+  showAuthModal,
   setShowAuthModal,
   authMode,
   setAuthMode,
   handleLogin
-}: { 
-  showAuthModal: boolean; 
+}: {
+  showAuthModal: boolean;
   setShowAuthModal: (show: boolean) => void;
   authMode: 'signin' | 'signup';
   setAuthMode: (mode: 'signin' | 'signup') => void;
@@ -283,9 +283,9 @@ const AuthModal = ({
 
         window.google.accounts.id.renderButton(
           document.getElementById("google-signin-button"),
-          { 
-            theme: "outline", 
-            size: "large", 
+          {
+            theme: "outline",
+            size: "large",
             width: "100%",
             text: authMode === 'signin' ? "signin_with" : "signup_with",
             shape: "pill"
@@ -325,14 +325,14 @@ const AuthModal = ({
     <AnimatePresence>
       {showAuthModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowAuthModal(false)}
             className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
           />
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -344,12 +344,12 @@ const AuthModal = ({
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-6">
               <div className="text-center space-y-2">
                 <p className="text-slate-400 text-sm">
-                  {authMode === 'signin' 
-                    ? 'Sign in to access your health dashboard.' 
+                  {authMode === 'signin'
+                    ? 'Sign in to access your health dashboard.'
                     : 'Join us today for personalized AI-powered health insights.'}
                 </p>
               </div>
@@ -395,7 +395,7 @@ const AuthModal = ({
                   <p className="text-red-500 text-xs text-center">{authError}</p>
                 )}
 
-                <button 
+                <button
                   type="submit"
                   disabled={loading}
                   className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -412,7 +412,7 @@ const AuthModal = ({
 
                 <p className="text-center text-sm text-slate-500">
                   {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}{' '}
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
                     className="text-blue-500 hover:underline font-medium"
@@ -464,7 +464,7 @@ export default function HealthRiskApp() {
     cloudSync: true,
     geminiKey: ''
   });
-  
+
   // Models
   const smokingPredictor = useRef<XGBPredictor>(new XGBPredictor());
   const drinkingPredictor = useRef<XGBPredictor>(new XGBPredictor());
@@ -498,13 +498,13 @@ export default function HealthRiskApp() {
 
   const speakText = (text: string, id: string) => {
     if (typeof window === 'undefined' || !settings.voiceFeedback) return;
-    
+
     if (isSpeaking === id) {
       window.speechSynthesis.cancel();
       setIsSpeaking(null);
       return;
     }
-    
+
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.onend = () => setIsSpeaking(null);
@@ -596,7 +596,7 @@ export default function HealthRiskApp() {
 
   const handleExportData = async (format: string) => {
     const dataToExport = predictionResult ? [predictionResult, ...healthHistory] : healthHistory;
-    
+
     if (dataToExport.length === 0) {
       setExportStatus("No data to export yet. Complete a health assessment first!");
       setTimeout(() => setExportStatus(null), 3000);
@@ -604,7 +604,7 @@ export default function HealthRiskApp() {
     }
 
     setExportStatus(`Preparing ${format}...`);
-    
+
     // Only simulate progress for PDF which takes longer
     if (format === 'PDF Report') {
       setExportProgress(0);
@@ -638,7 +638,7 @@ export default function HealthRiskApp() {
           content = JSON.stringify(formattedData, null, 2);
           fileName += ".json";
           mimeType = "application/json";
-          
+
           const blob = new Blob([content], { type: mimeType });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -652,7 +652,7 @@ export default function HealthRiskApp() {
           content = `${headers}\n${rows}`;
           fileName += ".csv";
           mimeType = "text/csv";
-          
+
           const blob = new Blob([content], { type: mimeType });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -664,15 +664,15 @@ export default function HealthRiskApp() {
           const { jsPDF } = await import('jspdf');
           const { default: autoTable } = await import('jspdf-autotable');
           const doc = new jsPDF();
-          
+
           // Add Header
           doc.setFillColor(30, 41, 59); // Slate-900
           doc.rect(0, 0, 210, 40, 'F');
-          
+
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(22);
           doc.text("SMOKING&DRINKINGHEALTH.AI REPORT", 105, 20, { align: 'center' });
-          
+
           doc.setFontSize(10);
           doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 30, { align: 'center' });
 
@@ -680,7 +680,7 @@ export default function HealthRiskApp() {
           doc.setTextColor(30, 41, 59);
           doc.setFontSize(14);
           doc.text("Assessment Summary", 14, 50);
-          
+
           const tableData = formattedData.map((item, index) => [
             index + 1,
             item.timestamp ? new Date(item.timestamp).toLocaleDateString() : 'N/A',
@@ -779,7 +779,7 @@ export default function HealthRiskApp() {
     const toggleSetting = (key: keyof typeof settings) => {
       const newValue = !settings[key];
       setSettings(prev => ({ ...prev, [key]: newValue }));
-      
+
       // Sync voice activities
       if ((key === 'voiceFeedback' || key === 'autoReadChat') && newValue === false) {
         stopSpeaking();
@@ -798,8 +798,8 @@ export default function HealthRiskApp() {
           { id: 'export', icon: Download, label: 'Data Export', desc: 'Download your health records' },
           { id: 'contact', icon: Mail, label: 'Contact Us', desc: 'Get in touch with our support team' }
         ].map((item) => (
-          <div 
-            key={item.id} 
+          <div
+            key={item.id}
             onClick={() => setActiveSettingsTab(item.id as any)}
             className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group"
           >
@@ -816,7 +816,7 @@ export default function HealthRiskApp() {
 
         {user && (
           <div className="pt-4">
-            <button 
+            <button
               onClick={handleLogout}
               className="w-full py-4 text-red-500 font-bold bg-red-500/10 rounded-2xl hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
             >
@@ -837,8 +837,8 @@ export default function HealthRiskApp() {
               { id: 'privacy', icon: Lock, label: 'Data Privacy', desc: 'Allow data collection for better health insights' },
               { id: 'history', icon: History, label: 'History Tracking', desc: 'Keep a log of your health predictions' }
             ].map((item) => (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 onClick={() => toggleSetting(item.id as keyof typeof settings)}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group"
               >
@@ -860,7 +860,7 @@ export default function HealthRiskApp() {
         <div className="space-y-4">
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Security</h4>
           <div className="space-y-2">
-            <div 
+            <div
               onClick={() => toggleSetting('twoFactor')}
               className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group"
             >
@@ -879,13 +879,13 @@ export default function HealthRiskApp() {
         </div>
 
         <div className="pt-4 border-t border-white/5">
-          <button 
+          <button
             onClick={() => setActiveSettingsTab('export')}
             className="w-full py-3 text-sm font-medium text-slate-400 hover:text-white transition-colors text-left px-4"
           >
             Export My Data
           </button>
-          <button 
+          <button
             onClick={() => setShowDeleteConfirm(true)}
             className="w-full py-3 text-sm font-medium text-red-500/70 hover:text-red-500 transition-colors text-left px-4"
           >
@@ -904,8 +904,8 @@ export default function HealthRiskApp() {
               { id: 'notifications', icon: Bell, label: 'Push Notifications', desc: 'Real-time health alerts on your device' },
               { id: 'emailAlerts', icon: Info, label: 'Email Alerts', desc: 'Weekly health summaries and reports' }
             ].map((item) => (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 onClick={() => toggleSetting(item.id as keyof typeof settings)}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group"
               >
@@ -931,8 +931,8 @@ export default function HealthRiskApp() {
               { id: 'healthReminders', icon: Activity, label: 'Checkup Reminders', desc: 'Alerts for scheduled health screenings' },
               { id: 'medicationReminders', icon: HeartPulse, label: 'Medication Alerts', desc: 'Daily reminders for your prescriptions' }
             ].map((item) => (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 onClick={() => toggleSetting(item.id as keyof typeof settings)}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group"
               >
@@ -961,7 +961,7 @@ export default function HealthRiskApp() {
             <div className="space-y-2">
               <label className="text-xs font-medium text-slate-400">Gemini API Key</label>
               <div className="relative">
-                <input 
+                <input
                   type="password"
                   value={settings.geminiKey}
                   onChange={(e) => setSettings(prev => ({ ...prev, geminiKey: e.target.value }))}
@@ -984,8 +984,8 @@ export default function HealthRiskApp() {
               { id: 'advancedReasoning', icon: Brain, label: 'Advanced Reasoning', desc: 'Enable deeper AI analysis for health predictions' },
               { id: 'highPerformance', icon: Zap, label: 'High Performance', desc: 'Prioritize speed over detailed explanations' }
             ].map((item) => (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 onClick={() => toggleSetting(item.id as keyof typeof settings)}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group"
               >
@@ -1011,8 +1011,8 @@ export default function HealthRiskApp() {
               { id: 'voiceFeedback', icon: Volume2, label: 'AI Voice', desc: 'AI will speak health insights aloud' },
               { id: 'autoReadChat', icon: MessageSquare, label: 'Auto-read Chat', desc: 'Automatically read chat replies', disabled: !settings.voiceFeedback }
             ].map((item) => (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 onClick={() => !item.disabled && toggleSetting(item.id as keyof typeof settings)}
                 className={`flex items-center justify-between p-4 bg-white/5 rounded-2xl transition-all ${item.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer group'}`}
               >
@@ -1036,7 +1036,7 @@ export default function HealthRiskApp() {
     const renderDataExport = () => (
       <div className="p-6 space-y-6">
         {exportStatus && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl space-y-3"
@@ -1049,7 +1049,7 @@ export default function HealthRiskApp() {
             </div>
             {exportProgress !== null && (
               <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <motion.div 
+                <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${exportProgress}%` }}
                   className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
@@ -1064,8 +1064,8 @@ export default function HealthRiskApp() {
             {[
               { id: 'autoExport', icon: History, label: 'Automatic Export', desc: 'Monthly backup of health data to cloud' }
             ].map((item) => (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 onClick={() => toggleSetting(item.id as keyof typeof settings)}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group"
               >
@@ -1088,7 +1088,7 @@ export default function HealthRiskApp() {
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Available Formats</h4>
           <div className="grid grid-cols-2 gap-3">
             {['PDF Report', 'CSV Data', 'JSON Raw', 'Health Connect'].map((format) => (
-              <button 
+              <button
                 key={format}
                 onClick={() => handleExportData(format)}
                 className="p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors text-left group"
@@ -1108,7 +1108,7 @@ export default function HealthRiskApp() {
         return (
           <div className="p-6 space-y-6">
             <div className="flex items-center gap-3 mb-2">
-              <button 
+              <button
                 onClick={() => setShowContactForm(false)}
                 className="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors"
               >
@@ -1116,7 +1116,7 @@ export default function HealthRiskApp() {
               </button>
               <h3 className="text-xl font-bold text-white">Contact Us Form</h3>
             </div>
-            
+
             <div className="space-y-4">
               {contactFormStatus ? (
                 <div className="p-8 text-center space-y-4">
@@ -1125,7 +1125,7 @@ export default function HealthRiskApp() {
                   </div>
                   <h4 className="text-lg font-bold text-white">Message Sent!</h4>
                   <p className="text-slate-400 text-sm">{contactFormStatus}</p>
-                  <button 
+                  <button
                     onClick={() => {
                       setShowContactForm(false);
                       setContactFormStatus(null);
@@ -1139,35 +1139,35 @@ export default function HealthRiskApp() {
                 <>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Your Name</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Enter your name"
                       value={contactFormData.name}
-                      onChange={(e) => setContactFormData({...contactFormData, name: e.target.value})}
+                      onChange={(e) => setContactFormData({ ...contactFormData, name: e.target.value })}
                       className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-colors"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       placeholder="Enter your email"
                       value={contactFormData.email}
-                      onChange={(e) => setContactFormData({...contactFormData, email: e.target.value})}
+                      onChange={(e) => setContactFormData({ ...contactFormData, email: e.target.value })}
                       className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-colors"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Message</label>
-                    <textarea 
+                    <textarea
                       rows={4}
                       placeholder="How can we help you?"
                       value={contactFormData.message}
-                      onChange={(e) => setContactFormData({...contactFormData, message: e.target.value})}
+                      onChange={(e) => setContactFormData({ ...contactFormData, message: e.target.value })}
                       className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-colors resize-none"
                     />
                   </div>
-                  <button 
+                  <button
                     onClick={async () => {
                       if (!contactFormData.name || !contactFormData.email || !contactFormData.message) {
                         setExportStatus("Please fill in all fields");
@@ -1212,30 +1212,30 @@ export default function HealthRiskApp() {
 
           <div className="space-y-3">
             {[
-              { 
-                icon: Mail, 
-                label: 'Email Support', 
-                value: 'Open Contact Form', 
+              {
+                icon: Mail,
+                label: 'Email Support',
+                value: 'Open Contact Form',
                 color: 'text-blue-400',
                 action: () => setShowContactForm(true)
               },
-              { 
-                icon: Phone, 
-                label: 'Call Us', 
-                value: '+2348026165268', 
+              {
+                icon: Phone,
+                label: 'Call Us',
+                value: '+2348026165268',
                 color: 'text-emerald-400',
                 action: () => setShowCallModal(true)
               },
-              { 
-                icon: Globe, 
-                label: 'Help Center', 
-                value: 'Not available yet', 
+              {
+                icon: Globe,
+                label: 'Help Center',
+                value: 'Not available yet',
                 color: 'text-purple-400',
                 action: () => setShowHelpModal(true)
               }
             ].map((item, i) => (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 onClick={item.action}
                 className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-4 hover:bg-white/10 transition-colors cursor-pointer group"
               >
@@ -1282,7 +1282,7 @@ export default function HealthRiskApp() {
       <AnimatePresence>
         {showSettings && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -1292,7 +1292,7 @@ export default function HealthRiskApp() {
               }}
               className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -1301,7 +1301,7 @@ export default function HealthRiskApp() {
               <div className="p-6 border-b border-white/5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {activeSettingsTab !== 'main' && (
-                    <button 
+                    <button
                       onClick={() => setActiveSettingsTab('main')}
                       className="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors"
                     >
@@ -1310,17 +1310,17 @@ export default function HealthRiskApp() {
                   )}
                   <h3 className="text-xl font-bold text-white">{getTitle()}</h3>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     setShowSettings(false);
                     setActiveSettingsTab('main');
-                  }} 
+                  }}
                   className="p-2 hover:bg-white/5 rounded-full text-slate-400 hover:text-white transition-colors"
                 >
                   <X size={20} />
                 </button>
               </div>
-              
+
               <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
                 {activeSettingsTab === 'main' && renderMain()}
                 {activeSettingsTab === 'privacy' && renderPrivacy()}
@@ -1334,14 +1334,14 @@ export default function HealthRiskApp() {
               <AnimatePresence>
                 {showDeleteConfirm && (
                   <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       onClick={() => setShowDeleteConfirm(false)}
                       className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
                     />
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, scale: 0.9, y: 20 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -1355,7 +1355,7 @@ export default function HealthRiskApp() {
                         This action is permanent and will delete all your health history and profile data.
                       </p>
                       <div className="flex flex-col gap-3">
-                        <button 
+                        <button
                           onClick={async () => {
                             // Implement real delete logic here if needed
                             // For now, we simulate and logout
@@ -1369,7 +1369,7 @@ export default function HealthRiskApp() {
                         >
                           Delete Permanently
                         </button>
-                        <button 
+                        <button
                           onClick={() => setShowDeleteConfirm(false)}
                           className="w-full py-4 bg-white/5 text-slate-400 rounded-2xl font-bold hover:bg-white/10 transition-colors"
                         >
@@ -1385,14 +1385,14 @@ export default function HealthRiskApp() {
               <AnimatePresence>
                 {showCallModal && (
                   <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       onClick={() => setShowCallModal(false)}
                       className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
                     />
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, scale: 0.9, y: 20 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -1405,14 +1405,14 @@ export default function HealthRiskApp() {
                       <p className="text-slate-400 text-sm mb-6">Our team is ready to help you.</p>
                       <p className="text-2xl font-bold text-white mb-8 tracking-wider">+2348026165268</p>
                       <div className="flex flex-col gap-3">
-                        <a 
+                        <a
                           href="tel:+2348026165268"
                           className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
                         >
                           <Phone size={18} />
                           Call Now
                         </a>
-                        <button 
+                        <button
                           onClick={() => setShowCallModal(false)}
                           className="w-full py-4 bg-white/5 text-slate-400 rounded-2xl font-bold hover:bg-white/10 transition-colors"
                         >
@@ -1428,14 +1428,14 @@ export default function HealthRiskApp() {
               <AnimatePresence>
                 {showHelpModal && (
                   <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       onClick={() => setShowHelpModal(false)}
                       className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
                     />
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, scale: 0.9, y: 20 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -1448,7 +1448,7 @@ export default function HealthRiskApp() {
                       <p className="text-slate-400 text-sm mb-8 leading-relaxed">
                         The Help Center is currently under construction and is <span className="text-white font-bold">not available yet</span>.
                       </p>
-                      <button 
+                      <button
                         onClick={() => setShowHelpModal(false)}
                         className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors"
                       >
@@ -1501,23 +1501,23 @@ export default function HealthRiskApp() {
           throw new Error("Microphone access is not supported in this browser.");
         }
         const ai = new GoogleGenAI({ apiKey });
-        
+
         // Initialize Audio Context
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-        
+
         if (audioContextRef.current.state === 'suspended') {
           await audioContextRef.current.resume();
         }
 
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const source = audioContextRef.current.createMediaStreamSource(stream);
-        
+
         // ScriptProcessor for raw PCM data
         processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-        
+
         setConnectionStatus("Establishing Live Connection...");
         sessionRef.current = await ai.live.connect({
-          model: "gemini-3.1-flash-live-preview",
+          model: "gemini-2.5-flash",
           config: {
             systemInstruction: `You are Elena, a supportive and professional health companion for Smoking&DrinkingHealth.AI. 
             Your knowledge is strictly limited to health-related issues, specifically focusing on smoking, drinking, and general wellness. 
@@ -1539,14 +1539,14 @@ export default function HealthRiskApp() {
               setIsListening(true);
               source.connect(processorRef.current!);
               processorRef.current!.connect(audioContextRef.current!.destination);
-              
+
               processorRef.current!.onaudioprocess = (e) => {
                 const inputData = e.inputBuffer.getChannelData(0);
                 const pcmData = new Int16Array(inputData.length);
                 for (let i = 0; i < inputData.length; i++) {
                   pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
                 }
-                
+
                 // More robust base64 encoding
                 const bytes = new Uint8Array(pcmData.buffer);
                 let binary = '';
@@ -1554,7 +1554,7 @@ export default function HealthRiskApp() {
                   binary += String.fromCharCode(bytes[i]);
                 }
                 const base64Data = btoa(binary);
-                
+
                 sessionRef.current?.sendRealtimeInput({
                   audio: { data: base64Data, mimeType: 'audio/pcm;rate=16000' }
                 });
@@ -1606,31 +1606,31 @@ export default function HealthRiskApp() {
 
     const playAudioResponse = async (base64Data: string) => {
       if (!audioContextRef.current) return;
-      
+
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      
+
       const pcmData = new Int16Array(bytes.buffer);
       const floatData = new Float32Array(pcmData.length);
       for (let i = 0; i < pcmData.length; i++) {
         floatData[i] = pcmData[i] / 0x7FFF;
       }
-      
+
       const buffer = audioContextRef.current.createBuffer(1, floatData.length, 24000);
       buffer.getChannelData(0).set(floatData);
-      
+
       const source = audioContextRef.current.createBufferSource();
       source.buffer = buffer;
       source.connect(audioContextRef.current.destination);
-      
+
       // Schedule playback to avoid gaps
       const startTime = Math.max(audioContextRef.current.currentTime, nextStartTimeRef.current);
       source.start(startTime);
       nextStartTimeRef.current = startTime + buffer.duration;
-      
+
       source.onended = () => {
         if (audioContextRef.current && audioContextRef.current.currentTime >= nextStartTimeRef.current - 0.1) {
           setIsAISpeaking(false);
@@ -1642,7 +1642,7 @@ export default function HealthRiskApp() {
     const stopAudioPlayback = () => {
       setIsAISpeaking(false);
       audioSourcesRef.current.forEach(source => {
-        try { source.stop(); } catch(e) {}
+        try { source.stop(); } catch (e) { }
       });
       audioSourcesRef.current = [];
       nextStartTimeRef.current = 0;
@@ -1651,7 +1651,7 @@ export default function HealthRiskApp() {
     return (
       <AnimatePresence>
         {isVoiceMode && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1670,7 +1670,7 @@ export default function HealthRiskApp() {
                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
                 <span className="text-xs font-bold text-white/50 uppercase tracking-[0.2em]">AI Live</span>
               </div>
-              <button 
+              <button
                 onClick={() => setIsVoiceMode(false)}
                 className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-95"
               >
@@ -1680,26 +1680,25 @@ export default function HealthRiskApp() {
 
             {/* Main Content */}
             <div className="relative z-10 flex flex-col items-center gap-16 w-full max-w-2xl px-6 text-center">
-              
+
               {/* Visualizer */}
               <div className="relative">
-                <motion.div 
-                  animate={{ 
+                <motion.div
+                  animate={{
                     scale: isAISpeaking ? [1, 1.15, 1] : isListening ? [1, 1.05, 1] : 1,
                   }}
                   transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                   className="relative w-64 h-64 rounded-full flex items-center justify-center"
                 >
                   {/* Outer Glows */}
-                  <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-1000 ${
-                    isAISpeaking ? 'bg-blue-500/30 scale-125' : isListening ? 'bg-emerald-500/20 scale-110' : 'bg-white/5'
-                  }`} />
-                  
+                  <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-1000 ${isAISpeaking ? 'bg-blue-500/30 scale-125' : isListening ? 'bg-emerald-500/20 scale-110' : 'bg-white/5'
+                    }`} />
+
                   {/* Glass Surface */}
                   <div className="absolute inset-0 rounded-full bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl overflow-hidden">
-                    <Image 
-                      src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80" 
-                      alt="AI" 
+                    <Image
+                      src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80"
+                      alt="AI"
                       fill
                       className={`object-cover transition-all duration-1000 ${isAISpeaking ? 'scale-110 grayscale-0' : 'scale-100 grayscale-[0.5]'}`}
                       referrerPolicy="no-referrer"
@@ -1711,16 +1710,16 @@ export default function HealthRiskApp() {
                   {(isListening || isAISpeaking) && (
                     <div className="absolute bottom-8 left-0 right-0 flex justify-center items-end gap-1 h-12">
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                        <motion.div 
+                        <motion.div
                           key={i}
-                          animate={{ 
+                          animate={{
                             height: isAISpeaking ? [8, 32, 12, 40, 8] : [4, 12, 4, 16, 4],
                             opacity: [0.4, 1, 0.4]
                           }}
-                          transition={{ 
-                            repeat: Infinity, 
-                            duration: 0.6 + (i * 0.1), 
-                            ease: "easeInOut" 
+                          transition={{
+                            repeat: Infinity,
+                            duration: 0.6 + (i * 0.1),
+                            ease: "easeInOut"
                           }}
                           className={`w-1 rounded-full ${isAISpeaking ? 'bg-blue-400' : 'bg-emerald-400'}`}
                         />
@@ -1757,7 +1756,7 @@ export default function HealthRiskApp() {
                     {connectionStatus}
                   </h2>
                 </motion.div>
-                
+
                 <div className="min-h-[120px] flex items-center justify-center">
                   {/* Transcript removed for voice-only experience */}
                 </div>
@@ -1765,7 +1764,7 @@ export default function HealthRiskApp() {
 
               {/* Controls */}
               <div className="flex items-center gap-8 mt-4">
-                <button 
+                <button
                   onClick={() => setIsVoiceMode(false)}
                   className="px-8 py-4 rounded-full bg-white text-black font-bold text-sm tracking-widest uppercase hover:bg-white/90 transition-all active:scale-95 shadow-xl shadow-white/10"
                 >
@@ -1810,7 +1809,7 @@ export default function HealthRiskApp() {
   const handlePredict = async () => {
     if (!modelsLoaded) return;
     setPredictionLoading(true);
-    
+
     // Simulate processing delay for UI feel
     await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -1822,7 +1821,7 @@ export default function HealthRiskApp() {
       drinking: drinkingProb,
       timestamp: new Date().toISOString()
     });
-    
+
     setPredictionLoading(false);
     handleTabChange('results');
 
@@ -1843,13 +1842,13 @@ export default function HealthRiskApp() {
     const prompt = `As a health AI, provide a brief (2-3 sentences) insight for a patient with a smoking risk of ${(smoking * 100).toFixed(1)}% and a drinking risk of ${(drinking * 100).toFixed(1)}%. 
     Be encouraging, professional, and use varied vocabulary. Avoid repetitive sentence structures. 
     Don't just state the numbers; provide a unique perspective on what they mean for the patient's long-term health.`;
-    
+
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || settings.geminiKey;
       if (apiKey) {
         const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: "gemini-2.5-flash",
           contents: prompt,
           config: {
             temperature: 1,
@@ -1896,7 +1895,7 @@ export default function HealthRiskApp() {
     if (selectedImage) {
       userMsg.image = selectedImage;
     }
-    
+
     setMessages(prev => [...prev, userMsg]);
     const currentInput = inputMessage;
     const currentImage = selectedImage;
@@ -1907,10 +1906,10 @@ export default function HealthRiskApp() {
     try {
       let aiResponse = "I'm sorry, I'm having trouble connecting to my brain right now.";
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || settings.geminiKey;
-      
+
       if (apiKey) {
         const ai = new GoogleGenAI({ apiKey });
-        
+
         let systemPrompt = `You are Elena, a supportive and professional health companion for Smoking&DrinkingHealth.AI. 
         Your knowledge is strictly limited to health-related issues, specifically focusing on smoking, drinking, and general wellness. 
         If asked about non-health topics, politely decline and steer the conversation back to health. 
@@ -1920,7 +1919,7 @@ export default function HealthRiskApp() {
         Don't repeat the user's name frequently. Focus on being helpful, direct, and varied in your expressions. 
         Provide unique and creative responses that feel human, not like a template. 
         Current time: ${new Date().toLocaleString()}.`;
-        
+
         if (settings.advancedReasoning) {
           systemPrompt += " Use advanced medical reasoning and provide detailed scientific context where appropriate.";
         }
@@ -1939,15 +1938,17 @@ export default function HealthRiskApp() {
         if (currentImage) {
           const base64Data = currentImage.split(',')[1];
           const mimeType = currentImage.split(',')[0].split(':')[1].split(';')[0];
-          
+
           response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
+            model: "gemini-2.5-flash",
             contents: [
-              { role: 'user', parts: [
-                { text: systemPrompt },
-                { text: currentInput || "Analyze this health-related image." },
-                { inlineData: { data: base64Data, mimeType } }
-              ]}
+              {
+                role: 'user', parts: [
+                  { text: systemPrompt },
+                  { text: currentInput || "Analyze this health-related image." },
+                  { inlineData: { data: base64Data, mimeType } }
+                ]
+              }
             ],
             config: chatConfig
           });
@@ -1958,16 +1959,16 @@ export default function HealthRiskApp() {
             parts: [{ text: msg.content }]
           }));
 
-          const chat = ai.chats.create({ 
-            model: "gemini-3-flash-preview",
+          const chat = ai.chats.create({
+            model: "gemini-2.5-flash",
             config: chatConfig,
             history: history
           });
           response = await chat.sendMessage({ message: currentInput });
         }
-        
+
         aiResponse = response.text || aiResponse;
-        
+
         // Voice Feedback
         if (settings.autoReadChat) {
           speakText(aiResponse, Date.now().toString());
@@ -1985,6 +1986,60 @@ export default function HealthRiskApp() {
       setIsTyping(false);
     }
   };
+
+  // 🎤 Voice Input State
+const [isRecording, setIsRecording] = useState(false);
+const recognitionRef = useRef(null);
+
+const startVoiceInput = () => {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Speech recognition not supported in this browser");
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+
+  recognition.lang = "en-US";
+  recognition.interimResults = true;
+  recognition.continuous = false;
+
+  recognition.onstart = () => setIsRecording(true);
+
+  recognition.onresult = (event) => {
+    let text = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      text += event.results[i][0].transcript;
+    }
+
+    setInputMessage(text); // 🎯 fills your input box
+  };
+
+  recognition.onerror = (err) => {
+    console.error("Mic error:", err);
+    setIsRecording(false);
+  };
+
+  recognition.onend = () => {
+    setIsRecording(false);
+
+    // 🚀 OPTIONAL: auto send after speaking
+if (inputMessage.trim()) {
+  handleSendMessage();
+}
+  };
+
+  recognitionRef.current = recognition;
+  recognition.start();
+};
+
+const stopVoiceInput = () => {
+  recognitionRef.current?.stop();
+  setIsRecording(false);
+};
 
   if (!isMounted) {
     return <div className="min-h-screen bg-slate-950" />;
@@ -2011,11 +2066,10 @@ export default function HealthRiskApp() {
             <button
               key={item.id}
               onClick={() => handleTabChange(item.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-                activeTab === item.id 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === item.id
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-              }`}
+                }`}
             >
               <item.icon size={20} />
               {activeTab === item.id && <span className="text-sm font-medium">{item.label}</span>}
@@ -2056,17 +2110,17 @@ export default function HealthRiskApp() {
                   </div>
                   <h2 className="text-3xl font-bold text-white">Smoking&DrinkingHealth.AI</h2>
                   <p className="text-slate-300 max-w-2xl leading-relaxed">
-                    Harness the power of advanced machine learning to transform your health data into actionable insights. 
+                    Harness the power of advanced machine learning to transform your health data into actionable insights.
                     Our XGBoost models analyze your unique metrics to provide precise risk assessments for smoking and drinking behaviors.
                   </p>
                   <div className="flex gap-4 pt-2">
-                    <button 
+                    <button
                       onClick={() => handleTabChange('predict')}
                       className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
                     >
                       Start Analysis
                     </button>
-                    <button 
+                    <button
                       onClick={() => setActiveTab('chat')}
                       className="px-6 py-2.5 bg-white/10 text-white border border-white/20 rounded-xl font-bold hover:bg-white/20 transition-all"
                     >
@@ -2088,9 +2142,9 @@ export default function HealthRiskApp() {
               {/* Featured Images Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-auto md:h-64 overflow-hidden rounded-2xl">
                 <div className="relative group overflow-hidden rounded-xl h-48 md:h-full">
-                  <Image 
-                    src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=800&q=80" 
-                    alt="Doctor and Patient" 
+                  <Image
+                    src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=800&q=80"
+                    alt="Doctor and Patient"
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                     referrerPolicy="no-referrer"
@@ -2100,9 +2154,9 @@ export default function HealthRiskApp() {
                   </div>
                 </div>
                 <div className="relative group overflow-hidden rounded-xl h-48 md:h-full">
-                  <Image 
-                    src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=800&q=80" 
-                    alt="Medical Consultation" 
+                  <Image
+                    src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=800&q=80"
+                    alt="Medical Consultation"
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                     referrerPolicy="no-referrer"
@@ -2121,14 +2175,14 @@ export default function HealthRiskApp() {
                     <p className="text-slate-400">Sign up today to unlock full risk assessments and AI-powered health insights.</p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button 
+                    <button
                       onClick={() => { setAuthMode('signin'); setShowAuthModal(true); }}
                       className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
                     >
                       <LogIn size={20} />
                       Sign In
                     </button>
-                    <button 
+                    <button
                       onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
                       className="px-8 py-3 bg-white/10 text-white border border-white/20 rounded-xl font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
                     >
@@ -2229,8 +2283,8 @@ export default function HealthRiskApp() {
                     { id: 'exercise', title: 'Exercise', desc: 'Daily routines to improve cardiovascular health.', icon: Activity, color: 'bg-blue-500/20 text-blue-500' },
                     { id: 'meditation', title: 'Meditation', desc: 'Stress reduction techniques for better BP.', icon: Wind, color: 'bg-purple-500/20 text-purple-500' }
                   ].map((app, i) => (
-                    <GlassCard 
-                      key={i} 
+                    <GlassCard
+                      key={i}
                       onClick={() => handleTabChange('chat')}
                       className="p-5 space-y-3 hover:bg-white/5 transition-colors cursor-pointer"
                     >
@@ -2249,9 +2303,9 @@ export default function HealthRiskApp() {
               {/* Smoking & Drinking Awareness Section */}
               <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="relative h-48 rounded-2xl overflow-hidden group cursor-pointer" onClick={() => handleTabChange('chat')}>
-                  <Image 
-                    src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=800&q=80" 
-                    alt="Smoking Awareness" 
+                  <Image
+                    src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=800&q=80"
+                    alt="Smoking Awareness"
                     fill
                     className="object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
@@ -2262,9 +2316,9 @@ export default function HealthRiskApp() {
                   </div>
                 </div>
                 <div className="relative h-48 rounded-2xl overflow-hidden group cursor-pointer" onClick={() => handleTabChange('chat')}>
-                  <Image 
-                    src="https://images.unsplash.com/photo-1520174691701-bc555a3404ca?auto=format&fit=crop&w=800&q=80" 
-                    alt="Drinking Awareness" 
+                  <Image
+                    src="https://images.unsplash.com/photo-1520174691701-bc555a3404ca?auto=format&fit=crop&w=800&q=80"
+                    alt="Drinking Awareness"
                     fill
                     className="object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
@@ -2321,69 +2375,68 @@ export default function HealthRiskApp() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-6">
                         <h4 className="text-sm font-bold text-blue-500 uppercase tracking-widest">Basic Info</h4>
-                        <SelectField 
-                          label="Sex" 
-                          value={metrics.sex_numeric} 
-                          onChange={(v: any) => setMetrics({...metrics, sex_numeric: parseInt(v)})}
-                          options={[{label: 'Male', value: 1}, {label: 'Female', value: 2}]}
+                        <SelectField
+                          label="Sex"
+                          value={metrics.sex_numeric}
+                          onChange={(v: any) => setMetrics({ ...metrics, sex_numeric: parseInt(v) })}
+                          options={[{ label: 'Male', value: 1 }, { label: 'Female', value: 2 }]}
                         />
-                        <InputField label="BMI" value={metrics.BMI} onChange={(v: any) => setMetrics({...metrics, BMI: v})} placeholder="e.g. 24.5" />
-                        <InputField label="Waistline (cm)" value={metrics.waistline} onChange={(v: any) => setMetrics({...metrics, waistline: v})} placeholder="e.g. 85" />
+                        <InputField label="BMI" value={metrics.BMI} onChange={(v: any) => setMetrics({ ...metrics, BMI: v })} placeholder="e.g. 24.5" />
+                        <InputField label="Waistline (cm)" value={metrics.waistline} onChange={(v: any) => setMetrics({ ...metrics, waistline: v })} placeholder="e.g. 85" />
                       </div>
 
                       <div className="space-y-6">
                         <h4 className="text-sm font-bold text-purple-500 uppercase tracking-widest">Vitals & Blood</h4>
-                        <InputField label="Systolic BP" value={metrics.SBP} onChange={(v: any) => setMetrics({...metrics, SBP: v})} placeholder="e.g. 120" />
-                        <InputField label="Diastolic BP" value={metrics.DBP} onChange={(v: any) => setMetrics({...metrics, DBP: v})} placeholder="e.g. 80" />
-                        <InputField label="Fasting Blood Sugar" value={metrics.BLDS} onChange={(v: any) => setMetrics({...metrics, BLDS: v})} placeholder="e.g. 95" />
-                        <InputField label="Hemoglobin" value={metrics.hemoglobin} onChange={(v: any) => setMetrics({...metrics, hemoglobin: v})} placeholder="e.g. 14.5" />
-                        <SelectField 
-                          label="Urine Protein" 
-                          value={metrics.urine_protein} 
-                          onChange={(v: any) => setMetrics({...metrics, urine_protein: parseInt(v)})}
+                        <InputField label="Systolic BP" value={metrics.SBP} onChange={(v: any) => setMetrics({ ...metrics, SBP: v })} placeholder="e.g. 120" />
+                        <InputField label="Diastolic BP" value={metrics.DBP} onChange={(v: any) => setMetrics({ ...metrics, DBP: v })} placeholder="e.g. 80" />
+                        <InputField label="Fasting Blood Sugar" value={metrics.BLDS} onChange={(v: any) => setMetrics({ ...metrics, BLDS: v })} placeholder="e.g. 95" />
+                        <InputField label="Hemoglobin" value={metrics.hemoglobin} onChange={(v: any) => setMetrics({ ...metrics, hemoglobin: v })} placeholder="e.g. 14.5" />
+                        <SelectField
+                          label="Urine Protein"
+                          value={metrics.urine_protein}
+                          onChange={(v: any) => setMetrics({ ...metrics, urine_protein: parseInt(v) })}
                           options={[
-                            {label: 'Negative', value: 1}, 
-                            {label: 'Trace', value: 2}, 
-                            {label: '+1 (Positive)', value: 3}, 
-                            {label: '+2 (Positive)', value: 4}, 
-                            {label: '+3 (Positive)', value: 5}, 
-                            {label: '+4 (Positive)', value: 6}
+                            { label: 'Negative', value: 1 },
+                            { label: 'Trace', value: 2 },
+                            { label: '+1 (Positive)', value: 3 },
+                            { label: '+2 (Positive)', value: 4 },
+                            { label: '+3 (Positive)', value: 5 },
+                            { label: '+4 (Positive)', value: 6 }
                           ]}
                         />
                       </div>
 
                       <div className="space-y-6">
                         <h4 className="text-sm font-bold text-emerald-500 uppercase tracking-widest">Lipids & Liver</h4>
-                        <InputField label="Triglyceride" value={metrics.triglyceride} onChange={(v: any) => setMetrics({...metrics, triglyceride: v})} placeholder="e.g. 150" />
-                        <InputField label="HDL Cholesterol" value={metrics.HDL_chole} onChange={(v: any) => setMetrics({...metrics, HDL_chole: v})} placeholder="e.g. 50" />
-                        <InputField label="LDL Cholesterol" value={metrics.LDL_chole} onChange={(v: any) => setMetrics({...metrics, LDL_chole: v})} placeholder="e.g. 110" />
-                        <InputField label="Gamma GTP" value={metrics.gamma_GTP} onChange={(v: any) => setMetrics({...metrics, gamma_GTP: v})} placeholder="e.g. 35" />
+                        <InputField label="Triglyceride" value={metrics.triglyceride} onChange={(v: any) => setMetrics({ ...metrics, triglyceride: v })} placeholder="e.g. 150" />
+                        <InputField label="HDL Cholesterol" value={metrics.HDL_chole} onChange={(v: any) => setMetrics({ ...metrics, HDL_chole: v })} placeholder="e.g. 50" />
+                        <InputField label="LDL Cholesterol" value={metrics.LDL_chole} onChange={(v: any) => setMetrics({ ...metrics, LDL_chole: v })} placeholder="e.g. 110" />
+                        <InputField label="Gamma GTP" value={metrics.gamma_GTP} onChange={(v: any) => setMetrics({ ...metrics, gamma_GTP: v })} placeholder="e.g. 35" />
                       </div>
                     </div>
 
                     <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col md:flex-row gap-6 items-center justify-between">
                       <div className="flex gap-4">
-                        <SelectField 
-                          label="Drinking Status" 
-                          value={metrics.DRK_YN} 
-                          onChange={(v: any) => setMetrics({...metrics, DRK_YN: parseInt(v)})}
-                          options={[{label: 'No', value: 0}, {label: 'Yes', value: 1}]}
+                        <SelectField
+                          label="Drinking Status"
+                          value={metrics.DRK_YN}
+                          onChange={(v: any) => setMetrics({ ...metrics, DRK_YN: parseInt(v) })}
+                          options={[{ label: 'No', value: 0 }, { label: 'Yes', value: 1 }]}
                         />
-                        <SelectField 
-                          label="Smoking Status" 
-                          value={metrics.SMK_stat_type_cd} 
-                          onChange={(v: any) => setMetrics({...metrics, SMK_stat_type_cd: parseInt(v)})}
-                          options={[{label: 'Never', value: 1}, {label: 'Former', value: 2}, {label: 'Current', value: 3}]}
+                        <SelectField
+                          label="Smoking Status"
+                          value={metrics.SMK_stat_type_cd}
+                          onChange={(v: any) => setMetrics({ ...metrics, SMK_stat_type_cd: parseInt(v) })}
+                          options={[{ label: 'Never', value: 1 }, { label: 'Former', value: 2 }, { label: 'Current', value: 3 }]}
                         />
                       </div>
                       <button
                         onClick={handlePredict}
                         disabled={!modelsLoaded || predictionLoading}
-                        className={`px-10 py-4 rounded-2xl font-bold text-lg transition-all flex items-center gap-3 ${
-                          predictionLoading 
-                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                        className={`px-10 py-4 rounded-2xl font-bold text-lg transition-all flex items-center gap-3 ${predictionLoading
+                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                             : 'bg-blue-600 text-white hover:bg-blue-500 shadow-xl shadow-blue-600/20 active:scale-95'
-                        }`}
+                          }`}
                       >
                         {predictionLoading ? (
                           <>
@@ -2429,7 +2482,7 @@ export default function HealthRiskApp() {
                     <div className="text-5xl font-bold text-white">{(predictionResult.smoking * 100).toFixed(1)}%</div>
                   </div>
                   <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-                    <motion.div 
+                    <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${predictionResult.smoking * 100}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
@@ -2437,8 +2490,8 @@ export default function HealthRiskApp() {
                     />
                   </div>
                   <p className="text-sm text-slate-400">
-                    {predictionResult.smoking > 0.5 
-                      ? "High risk detected. Consider consulting with a specialist about respiratory health." 
+                    {predictionResult.smoking > 0.5
+                      ? "High risk detected. Consider consulting with a specialist about respiratory health."
                       : "Low risk. Maintain your current healthy lifestyle choices."}
                   </p>
                 </GlassCard>
@@ -2452,7 +2505,7 @@ export default function HealthRiskApp() {
                     <div className="text-5xl font-bold text-white">{(predictionResult.drinking * 100).toFixed(1)}%</div>
                   </div>
                   <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-                    <motion.div 
+                    <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${predictionResult.drinking * 100}%` }}
                       transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
@@ -2460,8 +2513,8 @@ export default function HealthRiskApp() {
                     />
                   </div>
                   <p className="text-sm text-slate-400">
-                    {predictionResult.drinking > 0.5 
-                      ? "Elevated risk for alcohol-related complications. Monitoring liver enzymes is advised." 
+                    {predictionResult.drinking > 0.5
+                      ? "Elevated risk for alcohol-related complications. Monitoring liver enzymes is advised."
                       : "Your metrics suggest a low risk for alcohol-related health issues."}
                   </p>
                 </GlassCard>
@@ -2482,20 +2535,20 @@ export default function HealthRiskApp() {
               )}
 
               <div className="flex flex-wrap justify-center gap-4">
-                <button 
+                <button
                   onClick={() => handleExportData('CSV Data')}
                   className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-600/20 flex items-center gap-2"
                 >
                   <Download size={18} />
                   Download Report
                 </button>
-                <button 
+                <button
                   onClick={() => handleTabChange('predict')}
                   className="px-6 py-3 rounded-xl bg-slate-800 text-white font-medium hover:bg-slate-700 transition-colors"
                 >
                   Adjust Metrics
                 </button>
-                <button 
+                <button
                   onClick={() => handleTabChange('chat')}
                   className="px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20"
                 >
@@ -2530,7 +2583,7 @@ export default function HealthRiskApp() {
                   </div>
                   <div className="flex gap-2">
                     {isSpeaking && (
-                      <button 
+                      <button
                         onClick={stopSpeaking}
                         className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors animate-pulse"
                         title="Stop reading"
@@ -2539,7 +2592,7 @@ export default function HealthRiskApp() {
                       </button>
                     )}
                     {settings.voiceFeedback && (
-                      <button 
+                      <button
                         onClick={() => {
                           stopSpeaking();
                           setIsVoiceMode(true);
@@ -2550,7 +2603,7 @@ export default function HealthRiskApp() {
                         <Mic size={18} />
                       </button>
                     )}
-                    <button 
+                    <button
                       onClick={() => setShowSettings(true)}
                       className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                     >
@@ -2563,11 +2616,10 @@ export default function HealthRiskApp() {
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
                   {messages.map((msg: any, idx) => (
                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed space-y-2 ${
-                        msg.role === 'user' 
-                          ? 'bg-blue-600 text-white rounded-tr-none' 
+                      <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed space-y-2 ${msg.role === 'user'
+                          ? 'bg-blue-600 text-white rounded-tr-none'
                           : 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-white/5'
-                      }`}>
+                        }`}>
                         {msg.image && (
                           <div className="relative w-full max-h-64 rounded-lg overflow-hidden mb-2">
                             <img src={msg.image} alt="Health Metric" className="w-full h-full object-contain" />
@@ -2576,13 +2628,12 @@ export default function HealthRiskApp() {
                         {msg.content && <div>{msg.content}</div>}
                         {msg.role === 'assistant' && settings.voiceFeedback && (
                           <div className="flex justify-end pt-2">
-                            <button 
+                            <button
                               onClick={() => speakText(msg.content, idx.toString())}
-                              className={`p-1.5 rounded-lg transition-colors ${
-                                isSpeaking === idx.toString() 
-                                  ? 'bg-blue-500 text-white' 
+                              className={`p-1.5 rounded-lg transition-colors ${isSpeaking === idx.toString()
+                                  ? 'bg-blue-500 text-white'
                                   : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
-                              }`}
+                                }`}
                               title={isSpeaking === idx.toString() ? "Stop reading" : "Read aloud"}
                             >
                               {isSpeaking === idx.toString() ? <VolumeX size={14} /> : <Volume2 size={14} />}
@@ -2609,7 +2660,7 @@ export default function HealthRiskApp() {
                   {selectedImage && (
                     <div className="relative inline-block">
                       <img src={selectedImage} alt="Preview" className="w-20 h-20 object-cover rounded-lg border border-white/10" />
-                      <button 
+                      <button
                         onClick={() => setSelectedImage(null)}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
                       >
@@ -2618,37 +2669,56 @@ export default function HealthRiskApp() {
                     </div>
                   )}
                   <div className="relative flex items-center gap-2">
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      onChange={handleFileChange} 
-                      accept="image/*" 
-                      className="hidden" 
-                    />
-                    <button 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-3 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"
-                    >
-                      <ImagePlus size={20} />
-                    </button>
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        placeholder="Ask Elena anything about your health..."
-                        className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-4 pr-12 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                      />
-                      <button 
-                        onClick={handleSendMessage}
-                        disabled={!inputMessage.trim() && !selectedImage}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-blue-500 hover:text-blue-400 disabled:text-slate-600 transition-colors"
-                      >
-                        <Send size={20} />
-                      </button>
-                    </div>
-                  </div>
+  <input 
+    type="file" 
+    ref={fileInputRef} 
+    onChange={handleFileChange} 
+    accept="image/*" 
+    className="hidden" 
+  />
+
+  {/* Image Upload */}
+  <button 
+    onClick={() => fileInputRef.current?.click()}
+    className="p-3 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"
+  >
+    <ImagePlus size={20} />
+  </button>
+
+  {/* 🎤 MIC BUTTON */}
+  <button
+    onClick={isRecording ? stopVoiceInput : startVoiceInput}
+    className={`p-3 border rounded-xl transition-all ${
+      isRecording
+        ? "bg-red-500 text-white animate-pulse border-red-400"
+        : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+    }`}
+    title="Voice Input"
+  >
+    <Mic size={20} />
+  </button>
+
+  {/* TEXT INPUT */}
+  <div className="relative flex-1">
+    <input
+      type="text"
+      value={inputMessage}
+      onChange={(e) => setInputMessage(e.target.value)}
+      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+      placeholder={isRecording ? "Listening..." : "Ask Elena anything about your health..."}
+      className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-4 pr-12 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+    />
+
+    {/* SEND BUTTON */}
+    <button 
+      onClick={handleSendMessage}
+      disabled={!inputMessage.trim() && !selectedImage}
+      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-blue-500 hover:text-blue-400 disabled:text-slate-600 transition-colors"
+    >
+      <Send size={20} />
+    </button>
+  </div>
+</div>
                 </div>
               </GlassCard>
             </motion.div>
@@ -2701,7 +2771,7 @@ export default function HealthRiskApp() {
                           <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-wider">Verified Identity</span>
                         </div>
                       </div>
-                      <button 
+                      <button
                         onClick={handleLogout}
                         className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
                         title="Logout"
@@ -2733,8 +2803,8 @@ export default function HealthRiskApp() {
                           { id: 'export', icon: BarChart3, label: 'Data Export', desc: 'Download your health history in PDF/JSON' },
                           { id: 'contact', icon: Mail, label: 'Contact Us', desc: 'Get in touch with our support team' }
                         ].map((item) => (
-                          <div 
-                            key={item.id} 
+                          <div
+                            key={item.id}
                             onClick={() => {
                               setActiveSettingsTab(item.id as any);
                               setShowSettings(true);
@@ -2762,8 +2832,8 @@ export default function HealthRiskApp() {
       </main>
 
       <SettingsModal />
-      <AuthModal 
-        showAuthModal={showAuthModal} 
+      <AuthModal
+        showAuthModal={showAuthModal}
         setShowAuthModal={setShowAuthModal}
         authMode={authMode}
         setAuthMode={setAuthMode}
