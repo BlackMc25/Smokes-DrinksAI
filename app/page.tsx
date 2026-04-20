@@ -462,7 +462,6 @@ export default function HealthRiskApp() {
     highPerformance: false,
     autoExport: false,
     cloudSync: true,
-    geminiKey: ''
   });
 
   // Models
@@ -955,28 +954,25 @@ export default function HealthRiskApp() {
 
     const renderAI = () => (
       <div className="p-6 space-y-6">
+
+        {/* ✅ API STATUS (SAFE) */}
         <div className="space-y-4">
-          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">API Configuration</h4>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-400">Gemini API Key</label>
-              <div className="relative">
-                <input
-                  type="password"
-                  value={settings.geminiKey}
-                  onChange={(e) => setSettings(prev => ({ ...prev, geminiKey: e.target.value }))}
-                  placeholder={process.env.NEXT_PUBLIC_GEMINI_API_KEY ? "Using environment key..." : "Enter your Gemini API key"}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-colors"
-                />
-                <Key className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
-              </div>
-              <p className="text-[10px] text-slate-500 leading-relaxed">
-                Your API key is stored locally in your browser. For production, set <code className="text-blue-400/70">NEXT_PUBLIC_GEMINI_API_KEY</code> in your environment.
+          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            AI System
+          </h4>
+
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-white">AI Connection</p>
+              <p className="text-xs text-slate-400">
+                Securely connected to server-side AI engine
               </p>
             </div>
+            <div className="text-emerald-400 text-xs font-bold">ACTIVE</div>
           </div>
         </div>
 
+        {/* Intelligence */}
         <div className="space-y-4">
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Intelligence</h4>
           <div className="space-y-2">
@@ -990,20 +986,25 @@ export default function HealthRiskApp() {
                 className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors cursor-pointer group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="text-slate-400 group-hover:text-blue-500 transition-colors"><item.icon size={20} /></div>
+                  <div className="text-slate-400 group-hover:text-blue-500 transition-colors">
+                    <item.icon size={20} />
+                  </div>
                   <div>
                     <p className="text-sm font-medium text-white">{item.label}</p>
                     <p className="text-xs text-slate-500">{item.desc}</p>
                   </div>
                 </div>
-                <div className={`w-10 h-5 rounded-full relative transition-colors ${settings[item.id as keyof typeof settings] ? 'bg-blue-600' : 'bg-slate-700'}`}>
-                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${settings[item.id as keyof typeof settings] ? 'right-1' : 'left-1'}`} />
+                <div className={`w-10 h-5 rounded-full relative transition-colors ${settings[item.id as keyof typeof settings] ? 'bg-blue-600' : 'bg-slate-700'
+                  }`}>
+                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${settings[item.id as keyof typeof settings] ? 'right-1' : 'left-1'
+                    }`} />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
+        {/* Voice */}
         <div className="space-y-4">
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Voice & Audio</h4>
           <div className="space-y-2">
@@ -1014,22 +1015,32 @@ export default function HealthRiskApp() {
               <div
                 key={item.id}
                 onClick={() => !item.disabled && toggleSetting(item.id as keyof typeof settings)}
-                className={`flex items-center justify-between p-4 bg-white/5 rounded-2xl transition-all ${item.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer group'}`}
+                className={`flex items-center justify-between p-4 bg-white/5 rounded-2xl transition-all ${item.disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer group'
+                  }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`transition-colors ${item.disabled ? 'text-slate-600' : 'text-slate-400 group-hover:text-blue-500'}`}><item.icon size={20} /></div>
+                  <div className={`transition-colors ${item.disabled ? 'text-slate-600' : 'text-slate-400 group-hover:text-blue-500'
+                    }`}>
+                    <item.icon size={20} />
+                  </div>
                   <div>
-                    <p className={`text-sm font-medium ${item.disabled ? 'text-slate-500' : 'text-white'}`}>{item.label}</p>
+                    <p className={`text-sm font-medium ${item.disabled ? 'text-slate-500' : 'text-white'
+                      }`}>
+                      {item.label}
+                    </p>
                     <p className="text-xs text-slate-500">{item.desc}</p>
                   </div>
                 </div>
-                <div className={`w-10 h-5 rounded-full relative transition-colors ${settings[item.id as keyof typeof settings] && !item.disabled ? 'bg-blue-600' : 'bg-slate-700'}`}>
-                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${settings[item.id as keyof typeof settings] && !item.disabled ? 'right-1' : 'left-1'}`} />
+                <div className={`w-10 h-5 rounded-full relative transition-colors ${settings[item.id as keyof typeof settings] && !item.disabled ? 'bg-blue-600' : 'bg-slate-700'
+                  }`}>
+                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${settings[item.id as keyof typeof settings] && !item.disabled ? 'right-1' : 'left-1'
+                    }`} />
                 </div>
               </div>
             ))}
           </div>
         </div>
+
       </div>
     );
 
@@ -1468,320 +1479,82 @@ export default function HealthRiskApp() {
   // --- Voice Mode Overlay ---
   const VoiceMode = () => {
     const [isListening, setIsListening] = useState(false);
-    const [transcript, setTranscript] = useState("");
-    const [isAISpeaking, setIsAISpeaking] = useState(false);
-    const [connectionStatus, setConnectionStatus] = useState("Connecting...");
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const processorRef = useRef<ScriptProcessorNode | null>(null);
-    const sessionRef = useRef<any>(null);
-    const audioSourcesRef = useRef<AudioBufferSourceNode[]>([]);
-    const nextStartTimeRef = useRef<number>(0);
+    const recognitionRef = useRef<any>(null);
 
     useEffect(() => {
-      if (isVoiceMode) {
-        startVoiceSession();
-      } else {
-        stopVoiceSession();
-      }
-      return () => stopVoiceSession();
-    }, [isVoiceMode]);
+      if (!isVoiceMode) return;
 
-    const startVoiceSession = async () => {
-      try {
-        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || settings.geminiKey;
-        if (!apiKey) {
-          setConnectionStatus("API Key Missing");
-          alert("Please set your Gemini API key in the settings to use Voice Mode.");
-          setTimeout(() => setIsVoiceMode(false), 2000);
-          return;
-        }
+      const SpeechRecognition =
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
 
-        setConnectionStatus("Requesting Microphone...");
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error("Microphone access is not supported in this browser.");
-        }
-        const ai = new GoogleGenAI({ apiKey });
-
-        // Initialize Audio Context
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-
-        if (audioContextRef.current.state === 'suspended') {
-          await audioContextRef.current.resume();
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const source = audioContextRef.current.createMediaStreamSource(stream);
-
-        // ScriptProcessor for raw PCM data
-        processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-
-        setConnectionStatus("Establishing Live Connection...");
-        sessionRef.current = await ai.live.connect({
-          model: "gemini-2.5-flash",
-          config: {
-            systemInstruction: `You are Elena, a supportive and professional health companion for Smoking&DrinkingHealth.AI. 
-            Your knowledge is strictly limited to health-related issues, specifically focusing on smoking, drinking, and general wellness. 
-            If asked about non-health topics, politely decline and steer the conversation back to health. 
-            
-            CRITICAL: Be flexible, natural, and conversational. Use a wide range of vocabulary and sentence structures. 
-            Avoid starting every sentence with the same words. Don't repeat your name or greetings in every response. 
-            Don't repeat the user's name frequently. Focus on being helpful, direct, and varied in your expressions. 
-            Provide unique and creative responses that feel human, not like a template. 
-            Current time: ${new Date().toLocaleString()}.`,
-            responseModalities: [Modality.AUDIO],
-            speechConfig: {
-              voiceConfig: { prebuiltVoiceConfig: { voiceName: "Zephyr" } }
-            }
-          },
-          callbacks: {
-            onopen: () => {
-              setConnectionStatus("Elena is listening");
-              setIsListening(true);
-              source.connect(processorRef.current!);
-              processorRef.current!.connect(audioContextRef.current!.destination);
-
-              processorRef.current!.onaudioprocess = (e) => {
-                const inputData = e.inputBuffer.getChannelData(0);
-                const pcmData = new Int16Array(inputData.length);
-                for (let i = 0; i < inputData.length; i++) {
-                  pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
-                }
-
-                // More robust base64 encoding
-                const bytes = new Uint8Array(pcmData.buffer);
-                let binary = '';
-                for (let i = 0; i < bytes.byteLength; i++) {
-                  binary += String.fromCharCode(bytes[i]);
-                }
-                const base64Data = btoa(binary);
-
-                sessionRef.current?.sendRealtimeInput({
-                  audio: { data: base64Data, mimeType: 'audio/pcm;rate=16000' }
-                });
-              };
-            },
-            onmessage: async (message: any) => {
-              if (message.serverContent?.modelTurn) {
-                const parts = message.serverContent.modelTurn.parts;
-                for (const part of parts) {
-                  if (part?.inlineData) {
-                    setIsAISpeaking(true);
-                    playAudioResponse(part.inlineData.data);
-                  }
-                  if (part?.text) {
-                    setTranscript(prev => (prev + " " + part.text).trim());
-                  }
-                }
-              }
-              if (message.serverContent?.interrupted) {
-                stopAudioPlayback();
-              }
-            },
-            onclose: () => {
-              setIsListening(false);
-              setConnectionStatus("Connection Closed");
-            },
-            onerror: (err: any) => {
-              console.error("Live API Error:", err);
-              setConnectionStatus("Connection Error");
-            }
-          }
-        });
-      } catch (err) {
-        console.error("Failed to start voice session:", err);
-        setConnectionStatus("Failed to start");
-        setTimeout(() => setIsVoiceMode(false), 2000);
-      }
-    };
-
-    const stopVoiceSession = () => {
-      sessionRef.current?.close();
-      processorRef.current?.disconnect();
-      audioContextRef.current?.close();
-      setIsListening(false);
-      setIsAISpeaking(false);
-      setTranscript("");
-      stopAudioPlayback();
-    };
-
-    const playAudioResponse = async (base64Data: string) => {
-      if (!audioContextRef.current) return;
-
-      const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      if (!SpeechRecognition) {
+        alert("Voice recognition not supported in this browser.");
+        setIsVoiceMode(false);
+        return;
       }
 
-      const pcmData = new Int16Array(bytes.buffer);
-      const floatData = new Float32Array(pcmData.length);
-      for (let i = 0; i < pcmData.length; i++) {
-        floatData[i] = pcmData[i] / 0x7FFF;
-      }
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.continuous = false;
+      recognition.interimResults = false;
 
-      const buffer = audioContextRef.current.createBuffer(1, floatData.length, 24000);
-      buffer.getChannelData(0).set(floatData);
-
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContextRef.current.destination);
-
-      // Schedule playback to avoid gaps
-      const startTime = Math.max(audioContextRef.current.currentTime, nextStartTimeRef.current);
-      source.start(startTime);
-      nextStartTimeRef.current = startTime + buffer.duration;
-
-      source.onended = () => {
-        if (audioContextRef.current && audioContextRef.current.currentTime >= nextStartTimeRef.current - 0.1) {
-          setIsAISpeaking(false);
-        }
+      recognition.onstart = () => {
+        setIsListening(true);
       };
-      audioSourcesRef.current.push(source);
-    };
 
-    const stopAudioPlayback = () => {
-      setIsAISpeaking(false);
-      audioSourcesRef.current.forEach(source => {
-        try { source.stop(); } catch (e) { }
-      });
-      audioSourcesRef.current = [];
-      nextStartTimeRef.current = 0;
-    };
+      recognition.onresult = (event: any) => {
+        const text = event.results[0][0].transcript;
+
+        // ✅ put voice into input
+        setInputMessage(text);
+
+        // ✅ auto send
+        setTimeout(() => {
+          handleSendMessage();
+        }, 300);
+      };
+
+      recognition.onerror = (err: any) => {
+        console.error("Voice error:", err);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+
+      return () => {
+        recognition.stop();
+      };
+    }, [isVoiceMode]);
 
     return (
       <AnimatePresence>
         {isVoiceMode && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] bg-[#050505] overflow-hidden flex flex-col items-center justify-center"
+            className="fixed inset-0 z-[150] bg-black flex flex-col items-center justify-center text-white"
           >
-            {/* Immersive Background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px] animate-pulse" />
-              <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[150px]" />
-              <div className="absolute top-[40%] left-[60%] w-[30%] h-[30%] rounded-full bg-emerald-500/10 blur-[100px]" />
-            </div>
+            <h2 className="text-lg mb-6">
+              {isListening ? "Listening..." : "Tap to Speak"}
+            </h2>
 
-            {/* Header */}
-            <div className="absolute top-0 left-0 right-0 p-8 flex justify-between items-center z-20">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
-                <span className="text-xs font-bold text-white/50 uppercase tracking-[0.2em]">AI Live</span>
-              </div>
-              <button
-                onClick={() => setIsVoiceMode(false)}
-                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-all active:scale-95"
-              >
-                <X size={24} />
-              </button>
-            </div>
+            <button
+              onClick={() => recognitionRef.current?.start()}
+              className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl"
+            >
+              🎤
+            </button>
 
-            {/* Main Content */}
-            <div className="relative z-10 flex flex-col items-center gap-16 w-full max-w-2xl px-6 text-center">
-
-              {/* Visualizer */}
-              <div className="relative">
-                <motion.div
-                  animate={{
-                    scale: isAISpeaking ? [1, 1.15, 1] : isListening ? [1, 1.05, 1] : 1,
-                  }}
-                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                  className="relative w-64 h-64 rounded-full flex items-center justify-center"
-                >
-                  {/* Outer Glows */}
-                  <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-1000 ${isAISpeaking ? 'bg-blue-500/30 scale-125' : isListening ? 'bg-emerald-500/20 scale-110' : 'bg-white/5'
-                    }`} />
-
-                  {/* Glass Surface */}
-                  <div className="absolute inset-0 rounded-full bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl overflow-hidden">
-                    <Image
-                      src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80"
-                      alt="AI"
-                      fill
-                      className={`object-cover transition-all duration-1000 ${isAISpeaking ? 'scale-110 grayscale-0' : 'scale-100 grayscale-[0.5]'}`}
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/80 via-transparent to-transparent" />
-                  </div>
-
-                  {/* Waveform Overlay */}
-                  {(isListening || isAISpeaking) && (
-                    <div className="absolute bottom-8 left-0 right-0 flex justify-center items-end gap-1 h-12">
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                        <motion.div
-                          key={i}
-                          animate={{
-                            height: isAISpeaking ? [8, 32, 12, 40, 8] : [4, 12, 4, 16, 4],
-                            opacity: [0.4, 1, 0.4]
-                          }}
-                          transition={{
-                            repeat: Infinity,
-                            duration: 0.6 + (i * 0.1),
-                            ease: "easeInOut"
-                          }}
-                          className={`w-1 rounded-full ${isAISpeaking ? 'bg-blue-400' : 'bg-emerald-400'}`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
-
-                {/* Status Ring */}
-                <svg className="absolute inset-[-20px] w-[calc(100%+40px)] h-[calc(100%+40px)] pointer-events-none">
-                  <motion.circle
-                    cx="50%"
-                    cy="50%"
-                    r="48%"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1"
-                    strokeDasharray="4 8"
-                    className={`${isAISpeaking ? 'text-blue-500/50' : isListening ? 'text-emerald-500/50' : 'text-white/10'}`}
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-                  />
-                </svg>
-              </div>
-
-              {/* Text Content */}
-              <div className="space-y-6">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={connectionStatus}
-                >
-                  <h2 className="text-sm font-bold text-white/40 uppercase tracking-[0.4em] mb-2">
-                    {connectionStatus}
-                  </h2>
-                </motion.div>
-
-                <div className="min-h-[120px] flex items-center justify-center">
-                  {/* Transcript removed for voice-only experience */}
-                </div>
-              </div>
-
-              {/* Controls */}
-              <div className="flex items-center gap-8 mt-4">
-                <button
-                  onClick={() => setIsVoiceMode(false)}
-                  className="px-8 py-4 rounded-full bg-white text-black font-bold text-sm tracking-widest uppercase hover:bg-white/90 transition-all active:scale-95 shadow-xl shadow-white/10"
-                >
-                  End Session
-                </button>
-              </div>
-            </div>
-
-            {/* Footer Info */}
-            <div className="absolute bottom-12 left-0 right-0 flex justify-center z-20">
-              <div className="px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm flex items-center gap-3">
-                <div className={`w-1.5 h-1.5 rounded-full ${isListening ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-white/20'}`} />
-                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
-                  Secure End-to-End Encrypted
-                </span>
-              </div>
-            </div>
+            <button
+              onClick={() => setIsVoiceMode(false)}
+              className="mt-10 text-sm opacity-70"
+            >
+              Close
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1839,38 +1612,29 @@ export default function HealthRiskApp() {
   };
 
   const generateAIInsights = async (smoking: number, drinking: number) => {
-    const prompt = `As a health AI, provide a brief (2-3 sentences) insight for a patient with a smoking risk of ${(smoking * 100).toFixed(1)}% and a drinking risk of ${(drinking * 100).toFixed(1)}%. 
-    Be encouraging, professional, and use varied vocabulary. Avoid repetitive sentence structures. 
-    Don't just state the numbers; provide a unique perspective on what they mean for the patient's long-term health.`;
-
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || settings.geminiKey;
-      if (apiKey) {
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: prompt,
-          config: {
-            temperature: 1,
-            topP: 0.95,
-            topK: 64,
-          }
-        });
-        const insight = response.text;
-        setPredictionResult((prev: any) => ({ ...prev, insight }));
-        if (settings.voiceFeedback) {
-          speakText(insight, Date.now().toString());
-        }
-      } else {
-        // Fallback mock insight
-        const insight = `Based on your metrics, your smoking risk is ${(smoking * 100).toFixed(1)}% and drinking risk is ${(drinking * 100).toFixed(1)}%. Your hemoglobin and blood pressure levels are within a healthy range, which is a great sign. Consider maintaining your current physical activity levels to keep these markers stable.`;
-        setPredictionResult((prev: any) => ({ ...prev, insight }));
-        if (settings.voiceFeedback) {
-          speakText(insight, Date.now().toString());
-        }
+      const res = await fetch('/api/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ smoking, drinking })
+      });
+
+      const data = await res.json();
+
+      const insight = data.text || "Unable to generate insight at the moment.";
+
+      setPredictionResult((prev: any) => ({ ...prev, insight }));
+
+      if (settings.voiceFeedback) {
+        speakText(insight, Date.now().toString());
       }
+
     } catch (e) {
       console.error("AI Insight failed:", e);
+
+      const fallback = `Smoking risk: ${(smoking * 100).toFixed(1)}%, Drinking risk: ${(drinking * 100).toFixed(1)}%. Maintain healthy habits and monitor your lifestyle.`;
+
+      setPredictionResult((prev: any) => ({ ...prev, insight: fallback }));
     }
   };
 
@@ -1888,158 +1652,133 @@ export default function HealthRiskApp() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() && !selectedImage) return;
 
-    // Stop any ongoing speech when user sends a message
     stopSpeaking();
 
     const userMsg: any = { role: 'user', content: inputMessage };
-    if (selectedImage) {
-      userMsg.image = selectedImage;
-    }
+    if (selectedImage) userMsg.image = selectedImage;
 
     setMessages(prev => [...prev, userMsg]);
+
     const currentInput = inputMessage;
     const currentImage = selectedImage;
+
     setInputMessage('');
     setSelectedImage(null);
     setIsTyping(true);
 
     try {
-      let aiResponse = "I'm sorry, I'm having trouble connecting to my brain right now.";
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || settings.geminiKey;
+      const history = messages.map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }));
 
-      if (apiKey) {
-        const ai = new GoogleGenAI({ apiKey });
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: currentInput,
+          history,
+          image: currentImage || null
+        })
+      });
 
-        let systemPrompt = `You are Elena, a supportive and professional health companion for Smoking&DrinkingHealth.AI. 
-        Your knowledge is strictly limited to health-related issues, specifically focusing on smoking, drinking, and general wellness. 
-        If asked about non-health topics, politely decline and steer the conversation back to health. 
-        
-        CRITICAL: Be flexible, natural, and conversational. Use a wide range of vocabulary and sentence structures. 
-        Avoid starting every sentence with the same words. Don't repeat your name or greetings in every response. 
-        Don't repeat the user's name frequently. Focus on being helpful, direct, and varied in your expressions. 
-        Provide unique and creative responses that feel human, not like a template. 
-        Current time: ${new Date().toLocaleString()}.`;
+      const data = await res.json();
 
-        if (settings.advancedReasoning) {
-          systemPrompt += " Use advanced medical reasoning and provide detailed scientific context where appropriate.";
-        }
-        if (settings.highPerformance) {
-          systemPrompt += " Be extremely concise and prioritize speed in your response.";
-        }
+      let aiResponse = "I'm here to help, but I'm having a little trouble right now. Please try again in a moment.";
 
-        const chatConfig = {
-          systemInstruction: systemPrompt,
-          temperature: 1,
-          topP: 0.95,
-          topK: 64,
-        };
-
-        let response;
-        if (currentImage) {
-          const base64Data = currentImage.split(',')[1];
-          const mimeType = currentImage.split(',')[0].split(':')[1].split(';')[0];
-
-          response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [
-              {
-                role: 'user', parts: [
-                  { text: systemPrompt },
-                  { text: currentInput || "Analyze this health-related image." },
-                  { inlineData: { data: base64Data, mimeType } }
-                ]
-              }
-            ],
-            config: chatConfig
-          });
-        } else {
-          // Map history to Gemini format
-          const history = messages.map(msg => ({
-            role: msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content }]
-          }));
-
-          const chat = ai.chats.create({
-            model: "gemini-2.5-flash",
-            config: chatConfig,
-            history: history
-          });
-          response = await chat.sendMessage({ message: currentInput });
-        }
-
-        aiResponse = response.text || aiResponse;
-
-        // Voice Feedback
-        if (settings.autoReadChat) {
-          speakText(aiResponse, Date.now().toString());
-        }
-      } else {
-        // Mock response
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        aiResponse = "That's an interesting question about your health. Generally, maintaining a balanced BMI and monitoring your blood pressure are key steps in reducing long-term risks. Would you like to run a new prediction with your latest metrics?";
+      if (res.ok && data?.text) {
+        aiResponse = data.text;
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      // Friendly fallback for overload / errors
+      if (res.status === 503) {
+        aiResponse =
+          "⚠️ Elena is a bit busy right now. Please try again in a few seconds — I’ll be right back with your answer.";
+      }
+
+      if (res.status >= 500 && res.status !== 503) {
+        aiResponse =
+          "Something went wrong on my side. Please try again shortly.";
+      }
+
+      if (settings.autoReadChat) {
+        speakText(aiResponse, Date.now().toString());
+      }
+
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: aiResponse }
+      ]);
+
     } catch (e) {
       console.error("Chat failed:", e);
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content:
+            "I couldn't reach Elena right now. Please check your connection and try again."
+        }
+      ]);
     } finally {
       setIsTyping(false);
     }
   };
 
   // 🎤 Voice Input State
-const [isRecording, setIsRecording] = useState(false);
-const recognitionRef = useRef(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef(null);
 
-const startVoiceInput = () => {
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
+  const startVoiceInput = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  if (!SpeechRecognition) {
-    alert("Speech recognition not supported in this browser");
-    return;
-  }
-
-  const recognition = new SpeechRecognition();
-
-  recognition.lang = "en-US";
-  recognition.interimResults = true;
-  recognition.continuous = false;
-
-  recognition.onstart = () => setIsRecording(true);
-
-  recognition.onresult = (event) => {
-    let text = "";
-
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      text += event.results[i][0].transcript;
+    if (!SpeechRecognition) {
+      alert("Speech recognition not supported in this browser");
+      return;
     }
 
-    setInputMessage(text); // 🎯 fills your input box
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    recognition.onstart = () => setIsRecording(true);
+
+    recognition.onresult = (event) => {
+      let text = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        text += event.results[i][0].transcript;
+      }
+
+      setInputMessage(text); // 🎯 fills your input box
+    };
+
+    recognition.onerror = (err) => {
+      console.error("Mic error:", err);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+
+      // 🚀 OPTIONAL: auto send after speaking
+      if (inputMessage.trim()) {
+        handleSendMessage();
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
   };
 
-  recognition.onerror = (err) => {
-    console.error("Mic error:", err);
+  const stopVoiceInput = () => {
+    recognitionRef.current?.stop();
     setIsRecording(false);
   };
-
-  recognition.onend = () => {
-    setIsRecording(false);
-
-    // 🚀 OPTIONAL: auto send after speaking
-if (inputMessage.trim()) {
-  handleSendMessage();
-}
-  };
-
-  recognitionRef.current = recognition;
-  recognition.start();
-};
-
-const stopVoiceInput = () => {
-  recognitionRef.current?.stop();
-  setIsRecording(false);
-};
 
   if (!isMounted) {
     return <div className="min-h-screen bg-slate-950" />;
@@ -2067,8 +1806,8 @@ const stopVoiceInput = () => {
               key={item.id}
               onClick={() => handleTabChange(item.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${activeTab === item.id
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
                 }`}
             >
               <item.icon size={20} />
@@ -2434,8 +2173,8 @@ const stopVoiceInput = () => {
                         onClick={handlePredict}
                         disabled={!modelsLoaded || predictionLoading}
                         className={`px-10 py-4 rounded-2xl font-bold text-lg transition-all flex items-center gap-3 ${predictionLoading
-                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-500 shadow-xl shadow-blue-600/20 active:scale-95'
+                          ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-500 shadow-xl shadow-blue-600/20 active:scale-95'
                           }`}
                       >
                         {predictionLoading ? (
@@ -2617,8 +2356,8 @@ const stopVoiceInput = () => {
                   {messages.map((msg: any, idx) => (
                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed space-y-2 ${msg.role === 'user'
-                          ? 'bg-blue-600 text-white rounded-tr-none'
-                          : 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-white/5'
+                        ? 'bg-blue-600 text-white rounded-tr-none'
+                        : 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-white/5'
                         }`}>
                         {msg.image && (
                           <div className="relative w-full max-h-64 rounded-lg overflow-hidden mb-2">
@@ -2631,8 +2370,8 @@ const stopVoiceInput = () => {
                             <button
                               onClick={() => speakText(msg.content, idx.toString())}
                               className={`p-1.5 rounded-lg transition-colors ${isSpeaking === idx.toString()
-                                  ? 'bg-blue-500 text-white'
-                                  : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
                                 }`}
                               title={isSpeaking === idx.toString() ? "Stop reading" : "Read aloud"}
                             >
@@ -2669,56 +2408,55 @@ const stopVoiceInput = () => {
                     </div>
                   )}
                   <div className="relative flex items-center gap-2">
-  <input 
-    type="file" 
-    ref={fileInputRef} 
-    onChange={handleFileChange} 
-    accept="image/*" 
-    className="hidden" 
-  />
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
 
-  {/* Image Upload */}
-  <button 
-    onClick={() => fileInputRef.current?.click()}
-    className="p-3 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"
-  >
-    <ImagePlus size={20} />
-  </button>
+                    {/* Image Upload */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-3 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors"
+                    >
+                      <ImagePlus size={20} />
+                    </button>
 
-  {/* 🎤 MIC BUTTON */}
-  <button
-    onClick={isRecording ? stopVoiceInput : startVoiceInput}
-    className={`p-3 border rounded-xl transition-all ${
-      isRecording
-        ? "bg-red-500 text-white animate-pulse border-red-400"
-        : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
-    }`}
-    title="Voice Input"
-  >
-    <Mic size={20} />
-  </button>
+                    {/* 🎤 MIC BUTTON */}
+                    <button
+                      onClick={isRecording ? stopVoiceInput : startVoiceInput}
+                      className={`p-3 border rounded-xl transition-all ${isRecording
+                        ? "bg-red-500 text-white animate-pulse border-red-400"
+                        : "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+                        }`}
+                      title="Voice Input"
+                    >
+                      <Mic size={20} />
+                    </button>
 
-  {/* TEXT INPUT */}
-  <div className="relative flex-1">
-    <input
-      type="text"
-      value={inputMessage}
-      onChange={(e) => setInputMessage(e.target.value)}
-      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-      placeholder={isRecording ? "Listening..." : "Ask Elena anything about your health..."}
-      className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-4 pr-12 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-    />
+                    {/* TEXT INPUT */}
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        placeholder={isRecording ? "Listening..." : "Ask Elena anything about your health..."}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-4 pr-12 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                      />
 
-    {/* SEND BUTTON */}
-    <button 
-      onClick={handleSendMessage}
-      disabled={!inputMessage.trim() && !selectedImage}
-      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-blue-500 hover:text-blue-400 disabled:text-slate-600 transition-colors"
-    >
-      <Send size={20} />
-    </button>
-  </div>
-</div>
+                      {/* SEND BUTTON */}
+                      <button
+                        onClick={handleSendMessage}
+                        disabled={!inputMessage.trim() && !selectedImage}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-blue-500 hover:text-blue-400 disabled:text-slate-600 transition-colors"
+                      >
+                        <Send size={20} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </GlassCard>
             </motion.div>
